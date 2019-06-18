@@ -6,6 +6,8 @@ provider:
   name: aws
   runtime: go1.x
   stage: ${opt:stage, self:custom.defaultStage}
+  environment:
+    ${file(./env.yml)}
 
 custom:
   defaultStage: dev
