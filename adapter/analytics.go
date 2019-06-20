@@ -8,7 +8,7 @@ import (
 )
 
 type AnalyticsAdapter interface {
-	GetAnalytics() (*analytics.GaData, error)
+	GetSessions(start string, end string) (*analytics.GaData, error)
 	GetService() (*analytics.Service, error)
 }
 
@@ -20,15 +20,15 @@ func NewAnalyticsImplAdapter() AnalyticsAdapter {
 	return &analyticsImpl{}
 }
 
-func (a *analyticsImpl) GetAnalytics() (*analytics.GaData, error) {
+func (a *analyticsImpl) GetSessions(start string, end string) (*analytics.GaData, error) {
 	service, err := a.GetService()
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := service.Data.Ga.
-		Get("ga:"+os.Getenv("PROFILE_ID"), "yesterday", "today", "ga:sessions").
-		Dimensions("ga:pagePath,ga:pagePathLevel1,ga:pagePathLevel2,ga:pageTitle").
+		Get("ga:"+os.Getenv("PROFILE_ID"), start, end, "ga:sessions").
+		Dimensions("ga:pageTitle,ga:pagePath").
 		Do()
 	if err != nil {
 		return nil, err
