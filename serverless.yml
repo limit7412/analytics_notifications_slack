@@ -20,6 +20,6 @@ package:
 
 functions:
   analytics_notifications_slack:
-    handler: bin/analytics_notifications_slack
+    handler: bin/handler
     events:
       - schedule: cron(0 10 * * ? *) # UTC
