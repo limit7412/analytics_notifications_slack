@@ -18,3 +18,7 @@ bin
 *.out
 
 env\.yml
+
+\.vscode/
+
+secret\.json
