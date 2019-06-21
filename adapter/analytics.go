@@ -15,8 +15,8 @@ type AnalyticsAdapter interface {
 type analyticsImpl struct {
 }
 
-// NewAnalyticsImplAdapter access to analytics
-func NewAnalyticsImplAdapter() AnalyticsAdapter {
+// NewAnalyticsAdapter access to analytics
+func NewAnalyticsAdapter() AnalyticsAdapter {
 	return &analyticsImpl{}
 }
 

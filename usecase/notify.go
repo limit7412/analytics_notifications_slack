@@ -6,7 +6,7 @@ type NotifyUsecase interface {
 type notifyImpl struct {
 }
 
-// NewNotifyImplUsecase notification analytics to slack
-func NewNotifyImplUsecase() NotifyUsecase {
+// NewNotifyUsecase notification analytics to slack
+func NewNotifyUsecase() NotifyUsecase {
 	return &notifyImpl{}
 }
