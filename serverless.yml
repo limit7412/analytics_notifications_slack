@@ -1,4 +1,4 @@
-service: analytics_notifications_slack
+service: analytics-notifications-slack
 
 frameworkVersion: ">=1.28.0 <2.0.0"
 
@@ -6,6 +6,7 @@ provider:
   name: aws
   runtime: go1.x
   stage: ${opt:stage, self:custom.defaultStage}
+  region: ap-northeast-1
   environment:
     ${file(./env.yml)}
 
@@ -13,13 +14,13 @@ custom:
   defaultStage: dev
 
 package:
- exclude:
-   - ./**
- include:
-   - ./bin/**
+  exclude:
+    - ./**
+  include:
+    - ./**
 
 functions:
-  analytics_notifications_slack:
+  analyticsNotificationsSlack:
     handler: bin/handler
     events:
       - schedule: cron(0 10 * * ? *) # UTC

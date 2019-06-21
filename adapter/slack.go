@@ -20,7 +20,12 @@ func NewSlackAdapter() SlackAdapter {
 }
 
 type Post struct {
-	Text string `json:"text"`
+	Fallback string `json:"fallback"`
+	Pretext  string `json:"pretext"`
+	Title    string `json:"title"`
+	Text     string `json:"text"`
+	Color    string `json:"color"`
+	Footer   string `json:"footer"`
 }
 
 func (a *slackImpl) Post(msg *Post) error {
