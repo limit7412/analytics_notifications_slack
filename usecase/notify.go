@@ -50,13 +50,15 @@ func (n *notifyImpl) Run() error {
 }
 
 func (n *notifyImpl) Error(err error) {
-	slack := adapter.NewSlackAdapter()
+	slack := adapter.NewSlackAdapter(os.Getenv("FAILD_WEBHOOK_URL"))
 
 	post := []adapter.Post{}
 	post = append(post, adapter.Post{
-		Text:   err.Error(),
-		Color:  "#EB4646",
-		Footer: "analytics_notifications_slack",
+		Fallback: os.Getenv("FAILD_FALLBACK"),
+		Pretext:  "<@" + os.Getenv("SLACK_ID") + "> " + os.Getenv("FAILD_FALLBACK"),
+		Title:    err.Error(),
+		Color:    "#EB4646",
+		Footer:   "analytics_notifications_slack",
 	})
 
 	_ = slack.Post(post)
@@ -98,7 +100,7 @@ func (n *notifyImpl) CreateRankingData(title string, color string, data *analyti
 }
 
 func (n *notifyImpl) PostToSlack(post []adapter.Post) error {
-	slack := adapter.NewSlackAdapter()
+	slack := adapter.NewSlackAdapter(os.Getenv("SUCCESS_WEBHOOK_URL"))
 	err := slack.Post(post)
 	if err != nil {
 		return err

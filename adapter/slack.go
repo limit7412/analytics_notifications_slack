@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 type SlackAdapter interface {
@@ -13,11 +12,12 @@ type SlackAdapter interface {
 }
 
 type slackImpl struct {
+	url string
 }
 
 // NewSlackAdapter access to slack
-func NewSlackAdapter() SlackAdapter {
-	return &slackImpl{}
+func NewSlackAdapter(url string) SlackAdapter {
+	return &slackImpl{url: url}
 }
 
 type Post struct {
@@ -42,7 +42,7 @@ func (a *slackImpl) Post(msg []Post) error {
 	}
 	payload := url.Values{"payload": {string(params)}}
 	fmt.Print(payload)
-	res, err := http.PostForm(os.Getenv("WEBHOOK_URL"), payload)
+	res, err := http.PostForm(a.url, payload)
 	if err != nil {
 		return err
 	}
