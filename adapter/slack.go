@@ -2,13 +2,14 @@ package adapter
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 )
 
 type SlackAdapter interface {
-	Post(msg *Post) error
+	Post(msg []Post) error
 }
 
 type slackImpl struct {
@@ -28,13 +29,20 @@ type Post struct {
 	Footer   string `json:"footer"`
 }
 
-func (a *slackImpl) Post(msg *Post) error {
-	params, err := json.Marshal(msg)
+type payload struct {
+	Attachments []Post `json:"attachments"`
+}
+
+func (a *slackImpl) Post(msg []Post) error {
+	params, err := json.Marshal(payload{
+		Attachments: msg,
+	})
 	if err != nil {
 		return err
 	}
 	payload := url.Values{"payload": {string(params)}}
-	res, err := http.PostForm(os.Getenv("WEB_HOOK_URL"), payload)
+	fmt.Print(payload)
+	res, err := http.PostForm(os.Getenv("WEBHOOK_URL"), payload)
 	if err != nil {
 		return err
 	}
