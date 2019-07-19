@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"google.golang.org/api/analytics/v3"
 )
@@ -45,7 +46,13 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([][]string, error
 		return nil, err
 	}
 
-	result := data.Rows
+	result := [][]string{}
+	for _, line := range data.Rows {
+		if strings.Count(line[1], "/") != 1 {
+			result = append(result, line)
+		}
+	}
+
 	sort.Slice(result, func(i, j int) bool {
 		a, _ := strconv.Atoi(result[i][2])
 		b, _ := strconv.Atoi(result[j][2])
