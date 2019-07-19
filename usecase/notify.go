@@ -3,19 +3,15 @@ package usecase
 import (
 	"fmt"
 	"os"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/limit7412/analytics_notifications_slack/repository"
-	"google.golang.org/api/analytics/v3"
 )
 
 type NotifyUsecase interface {
 	Run() error
 	Error(err error)
-	GetTodaySessions() (*analytics.GaData, error)
-	CreateRankingData(title string, color string, data *analytics.GaData) repository.Post
+	CreateRankingData(title string, color string, data [][]string) repository.Post
 	PostToSlack(post []repository.Post) error
 }
 
@@ -34,7 +30,8 @@ func (n *notifyImpl) Run() error {
 		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
 	})
 
-	data, err := n.GetTodaySessions()
+	adp := repository.NewAnalyticsRepository()
+	data, err := adp.GetSessions("today", "today")
 	if err != nil {
 		return err
 	}
@@ -65,26 +62,9 @@ func (n *notifyImpl) Error(err error) {
 	fmt.Print(err)
 }
 
-func (n *notifyImpl) GetTodaySessions() (*analytics.GaData, error) {
-	adp := repository.NewAnalyticsRepository()
-	result, err := adp.GetSessions("today", "today")
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (n *notifyImpl) CreateRankingData(title string, color string, data *analytics.GaData) repository.Post {
-	rows := data.Rows
-	sort.Slice(rows, func(i, j int) bool {
-		a, _ := strconv.Atoi(rows[i][2])
-		b, _ := strconv.Atoi(rows[j][2])
-		return a > b
-	})
-
+func (n *notifyImpl) CreateRankingData(title string, color string, data [][]string) repository.Post {
 	text := []string{}
-	for i, line := range rows {
+	for i, line := range data {
 		if i >= 5 {
 			break
 		}
