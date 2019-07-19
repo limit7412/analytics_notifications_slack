@@ -3,7 +3,9 @@ package usecase
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/limit7412/analytics_notifications_slack/repository"
 )
@@ -36,6 +38,15 @@ func (n *notifyImpl) Run() error {
 		return err
 	}
 	line := n.CreateRankingData("今日のpv数ランキング", "#4286f4", data)
+	post = append(post, line)
+
+	today := time.Now()
+	month := today.Day()
+	data, err = adp.GetSessions(strconv.Itoa(month-1)+"daysAgo", "today")
+	if err != nil {
+		return err
+	}
+	line = n.CreateRankingData("今月のpv数ランキング", "#dbe031", data)
 	post = append(post, line)
 
 	err = n.PostToSlack(post)
