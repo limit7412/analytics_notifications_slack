@@ -40,7 +40,7 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([][]string, error
 
 	data, err := service.Data.Ga.
 		Get("ga:"+os.Getenv("PROFILE_ID"), start, end, "ga:sessions").
-		Dimensions("ga:pageTitle,ga:pagePath").
+		Dimensions("ga:pageTitle,ga:hostname,ga:pagePath").
 		Do()
 	if err != nil {
 		return nil, err
@@ -48,14 +48,14 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([][]string, error
 
 	result := [][]string{}
 	for _, line := range data.Rows {
-		if strings.Count(line[1], "/") != 1 {
+		if strings.Count(line[2], "/") != 1 {
 			result = append(result, line)
 		}
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		a, _ := strconv.Atoi(result[i][2])
-		b, _ := strconv.Atoi(result[j][2])
+		a, _ := strconv.Atoi(result[i][3])
+		b, _ := strconv.Atoi(result[j][3])
 		return a > b
 	})
 
