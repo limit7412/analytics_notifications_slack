@@ -1,4 +1,4 @@
-package adapter
+package repository
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-type SlackAdapter interface {
+type SlackRepository interface {
 	Post(msg []Post) error
 }
 
@@ -15,8 +15,8 @@ type slackImpl struct {
 	url string
 }
 
-// NewSlackAdapter access to slack
-func NewSlackAdapter(url string) SlackAdapter {
+// NewSlackRepository access to slack
+func NewSlackRepository(url string) SlackRepository {
 	return &slackImpl{url: url}
 }
 
