@@ -1,4 +1,4 @@
-package adapter
+package repository
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"google.golang.org/api/analytics/v3"
 )
 
-type AnalyticsAdapter interface {
+type AnalyticsRepository interface {
 	GetSessions(start string, end string) (*analytics.GaData, error)
 	GetService() (*analytics.Service, error)
 }
@@ -15,8 +15,8 @@ type AnalyticsAdapter interface {
 type analyticsImpl struct {
 }
 
-// NewAnalyticsAdapter access to analytics
-func NewAnalyticsAdapter() AnalyticsAdapter {
+// NewAnalyticsRepository access to analytics
+func NewAnalyticsRepository() AnalyticsRepository {
 	return &analyticsImpl{}
 }
 
