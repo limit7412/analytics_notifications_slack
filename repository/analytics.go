@@ -11,7 +11,7 @@ import (
 )
 
 type AnalyticsRepository interface {
-	GetSessions(start string, end string) ([][]string, error)
+	GetSessions(start string, end string) ([]*Page, error)
 }
 
 type analyticsImpl struct {
@@ -20,6 +20,12 @@ type analyticsImpl struct {
 // NewAnalyticsRepository access to analytics
 func NewAnalyticsRepository() AnalyticsRepository {
 	return &analyticsImpl{}
+}
+
+type Page struct {
+	Title string
+	Path  string
+	PV    string
 }
 
 func (a *analyticsImpl) getService() (*analytics.Service, error) {
@@ -32,7 +38,7 @@ func (a *analyticsImpl) getService() (*analytics.Service, error) {
 	return analyticsService, nil
 }
 
-func (a *analyticsImpl) GetSessions(start string, end string) ([][]string, error) {
+func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 	service, err := a.getService()
 	if err != nil {
 		return nil, err
@@ -46,16 +52,21 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([][]string, error
 		return nil, err
 	}
 
-	result := [][]string{}
+	result := []*Page{}
 	for _, line := range data.Rows {
 		if strings.Count(line[2], "/") != 1 {
-			result = append(result, line)
+			page := &Page{
+				Title: line[0],
+				Path:  line[1] + line[2],
+				PV:    line[3],
+			}
+			result = append(result, page)
 		}
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		a, _ := strconv.Atoi(result[i][3])
-		b, _ := strconv.Atoi(result[j][3])
+		a, _ := strconv.Atoi(result[i].PV)
+		b, _ := strconv.Atoi(result[j].PV)
 		return a > b
 	})
 
