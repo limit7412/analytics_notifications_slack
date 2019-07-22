@@ -13,8 +13,6 @@ import (
 type NotifyUsecase interface {
 	Run() error
 	Error(err error)
-	CreateRankingData(title string, color string, data [][]string) repository.Post
-	PostToSlack(post []repository.Post) error
 }
 
 type notifyImpl struct {
@@ -37,7 +35,7 @@ func (n *notifyImpl) Run() error {
 	if err != nil {
 		return err
 	}
-	line := n.CreateRankingData("今日のpv数ランキング", "#4286f4", data)
+	line := n.createRankingData("今日のpv数ランキング", "#4286f4", data)
 	post = append(post, line)
 
 	today := time.Now()
@@ -46,10 +44,10 @@ func (n *notifyImpl) Run() error {
 	if err != nil {
 		return err
 	}
-	line = n.CreateRankingData("今月のpv数ランキング", "#dbe031", data)
+	line = n.createRankingData("今月のpv数ランキング", "#dbe031", data)
 	post = append(post, line)
 
-	err = n.PostToSlack(post)
+	err = n.postToSlack(post)
 	if err != nil {
 		return err
 	}
@@ -73,13 +71,13 @@ func (n *notifyImpl) Error(err error) {
 	fmt.Print(err)
 }
 
-func (n *notifyImpl) CreateRankingData(title string, color string, data [][]string) repository.Post {
+func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) repository.Post {
 	text := []string{}
 	for i, line := range data {
 		if i >= 5 {
 			break
 		}
-		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, line[1]+line[2], line[0], line[3]))
+		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, line.Path, line.Title, line.PV))
 	}
 	post := repository.Post{
 		Title: title,
@@ -90,7 +88,7 @@ func (n *notifyImpl) CreateRankingData(title string, color string, data [][]stri
 	return post
 }
 
-func (n *notifyImpl) PostToSlack(post []repository.Post) error {
+func (n *notifyImpl) postToSlack(post []repository.Post) error {
 	slack := repository.NewSlackRepository(os.Getenv("SUCCESS_WEBHOOK_URL"))
 	err := slack.Post(post)
 	if err != nil {
