@@ -47,6 +47,13 @@ func (n *notifyImpl) Run() error {
 	line = n.createRankingData("今月のpv数ランキング", "#dbe031", data)
 	post = append(post, line)
 
+	data, err = adp.GetSessions("2005-01-01", "today")
+	if err != nil {
+		return err
+	}
+	line = n.createRankingData("累計pv数ランキング", "#41a300", data)
+	post = append(post, line)
+
 	err = n.postToSlack(post)
 	if err != nil {
 		return err
