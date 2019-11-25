@@ -8,16 +8,15 @@ import (
 )
 
 type SlackRepository interface {
-	Post(msg []Post) error
+	Post(path string, msg []*Post) error
 }
 
 type slackImpl struct {
-	url string
 }
 
 // NewSlackRepository access to slack
-func NewSlackRepository(url string) SlackRepository {
-	return &slackImpl{url: url}
+func NewSlackRepository() SlackRepository {
+	return &slackImpl{}
 }
 
 type Post struct {
@@ -30,10 +29,10 @@ type Post struct {
 }
 
 type payload struct {
-	Attachments []Post `json:"attachments"`
+	Attachments []*Post `json:"attachments"`
 }
 
-func (a *slackImpl) Post(msg []Post) error {
+func (a *slackImpl) Post(path string, msg []*Post) error {
 	params, err := json.Marshal(payload{
 		Attachments: msg,
 	})
@@ -42,7 +41,7 @@ func (a *slackImpl) Post(msg []Post) error {
 	}
 	payload := url.Values{"payload": {string(params)}}
 	fmt.Print(payload)
-	res, err := http.PostForm(a.url, payload)
+	res, err := http.PostForm(path, payload)
 	if err != nil {
 		return err
 	}
