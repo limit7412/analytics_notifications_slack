@@ -24,8 +24,8 @@ func NewNotifyUsecase() NotifyUsecase {
 }
 
 func (n *notifyImpl) Run() error {
-	post := []repository.Post{}
-	post = append(post, repository.Post{
+	post := []*repository.Post{}
+	post = append(post, &repository.Post{
 		Fallback: os.Getenv("SUCCESS_FALLBACK"),
 		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
 	})
@@ -63,10 +63,10 @@ func (n *notifyImpl) Run() error {
 }
 
 func (n *notifyImpl) Error(err error) {
-	slack := repository.NewSlackRepository(os.Getenv("FAILD_WEBHOOK_URL"))
+	slack := repository.NewSlackRepository()
 
-	post := []repository.Post{}
-	post = append(post, repository.Post{
+	post := []*repository.Post{}
+	post = append(post, &repository.Post{
 		Fallback: os.Getenv("FAILD_FALLBACK"),
 		Pretext:  "<@" + os.Getenv("SLACK_ID") + "> " + os.Getenv("FAILD_FALLBACK"),
 		Title:    err.Error(),
@@ -74,11 +74,11 @@ func (n *notifyImpl) Error(err error) {
 		Footer:   "analytics_notifications_slack",
 	})
 
-	_ = slack.Post(post)
+	_ = slack.Post(os.Getenv("FAILD_WEBHOOK_URL"), post)
 	fmt.Print(err)
 }
 
-func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) repository.Post {
+func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Post {
 	text := []string{}
 	for i, line := range data {
 		if i >= 5 {
@@ -86,7 +86,7 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		}
 		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, line.Path, line.Title, line.PV))
 	}
-	post := repository.Post{
+	post := &repository.Post{
 		Title: title,
 		Text:  strings.Join(text, "\n"),
 		Color: color,
@@ -95,9 +95,9 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 	return post
 }
 
-func (n *notifyImpl) postToSlack(post []repository.Post) error {
-	slack := repository.NewSlackRepository(os.Getenv("SUCCESS_WEBHOOK_URL"))
-	err := slack.Post(post)
+func (n *notifyImpl) postToSlack(post []*repository.Post) error {
+	slack := repository.NewSlackRepository()
+	err := slack.Post(os.Getenv("SUCCESS_WEBHOOK_URL"), post)
 	if err != nil {
 		return err
 	}
