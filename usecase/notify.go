@@ -54,7 +54,8 @@ func (n *notifyImpl) Run() error {
 	line = n.createRankingData("累計pv数ランキング", "#41a300", data)
 	post = append(post, line)
 
-	err = n.postToSlack(post)
+	slack := repository.NewSlackRepository()
+	err = slack.Post(os.Getenv("SUCCESS_WEBHOOK_URL"), post)
 	if err != nil {
 		return err
 	}
@@ -93,14 +94,4 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 	}
 
 	return post
-}
-
-func (n *notifyImpl) postToSlack(post []*repository.Post) error {
-	slack := repository.NewSlackRepository()
-	err := slack.Post(os.Getenv("SUCCESS_WEBHOOK_URL"), post)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
