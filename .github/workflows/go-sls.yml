@@ -25,6 +25,22 @@ jobs:
     - name: build
       run: go build -ldflags="-s -w" -o bin/handler handler/main.go
 
+    - name: get env
+      uses: actions/aws/cli@master
+      with:
+        args: s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/env.yml .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets. }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: get secret
+      uses: actions/aws/cli@master
+      with:
+        args: s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/secret.json .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     - name: deploy
       uses: serverless/github-action@master
       with:
