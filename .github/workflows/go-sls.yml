@@ -2,7 +2,7 @@ name: go-sls
 
 on:
   push:
-    branches: [ master ]
+    branches: [ develop ]
 
 jobs:
   deploy:
