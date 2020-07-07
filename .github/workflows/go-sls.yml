@@ -2,7 +2,6 @@ name: go-sls
 
 on:
   push:
-    # FIXME: test on develop branch
     branches: [ develop ]
   pull_request:
     branches: [ master ]
