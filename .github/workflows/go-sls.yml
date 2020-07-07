@@ -25,21 +25,20 @@ jobs:
     - name: build
       run: go build -ldflags="-s -w" -o bin/handler handler/main.go
 
-    - name: get env
-      uses: actions/aws/cli@master
+    - name: configure  aws credentials from Test account
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        args: s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/env.yml .
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+
+    - name: get env
+      run: |
+        s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/env.yml .
 
     - name: get secret
-      uses: actions/aws/cli@master
-      with:
-        args: s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/secret.json .
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/secret.json .
 
     - name: deploy
       uses: serverless/github-action@master
