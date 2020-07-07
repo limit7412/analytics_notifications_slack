@@ -30,7 +30,7 @@ jobs:
       with:
         args: s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/env.yml .
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets. }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     - name: get secret
