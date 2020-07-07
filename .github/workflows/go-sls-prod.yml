@@ -22,7 +22,7 @@ jobs:
     - name: build
       run: go build -ldflags="-s -w" -o bin/handler handler/main.go
 
-    - name: configure  aws credentials from Test account
+    - name: configure aws
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
