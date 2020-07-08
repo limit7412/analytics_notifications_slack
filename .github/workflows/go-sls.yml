@@ -31,11 +31,11 @@ jobs:
 
     - name: get env
       run: |
-        aws s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/env.yml .
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/env.yml .
 
     - name: get secret
       run: |
-        aws s3 cp s3://limit7412-codebuild-envfile/analytics_notifications_slack/dev/secret.json .
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/secret.json .
 
     - name: deploy
       uses: serverless/github-action@master
