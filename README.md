@@ -1,4 +1,6 @@
-# analytics_notifications_slack ![go-sls](https://github.com/limit7412/analytics_notifications_slack/workflows/go-sls/badge.svg)
+# analytics_notifications_slack 
+![go-sls](https://github.com/limit7412/analytics_notifications_slack/workflows/go-sls/badge.svg)
+
 googleアナリティクスのpvを集計してランキングを作成して投稿するslackbot
 
 ## deploy
