@@ -57,7 +57,7 @@ jobs:
       env:
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        echo "::set-output name=DIGEST::$(aws ecr list-images --repository-name $container | jq '.imageIds[] | select(.imageTag=="'$IMAGE_TAG'") | .imageDigest' | tr -d '"')"
+        echo "::set-output name=DIGEST::$(aws ecr list-images --repository-name analytics_notifications_slack_dev | jq '.imageIds[] | select(.imageTag=="'$IMAGE_TAG'") | .imageDigest' | tr -d '"')"
 
     - name: deploy
       env:
