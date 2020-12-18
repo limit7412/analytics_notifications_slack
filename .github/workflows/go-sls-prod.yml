@@ -22,7 +22,7 @@ jobs:
 
     - name: login ecr
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@master
 
     - name: build and push ecr
       env:
