@@ -63,8 +63,4 @@ jobs:
       env:
         ACCOUNT_ID: ${{ steps.get-aws-account.outputs.ACCOUNT_ID }}
         DIGEST: ${{ steps.get-ecr-digest.outputs.DIGEST }}
-      run: sls deploy --verbose --stage prod --account $ACCOUNT_ID --digest $DIGEST > ./result.txt
-
-    - name: push result
-      run: |
-        aws s3 cp ./result.txt s3://limit7412-workflow-env/analytics_notifications_slack/result/result-prod.txt
+      run: sls deploy --verbose --stage prod --account $ACCOUNT_ID --digest $DIGEST
