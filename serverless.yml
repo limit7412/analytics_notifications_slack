@@ -11,14 +11,8 @@ provider:
 custom:
   defaultStage: dev
 
-package:
-  exclude:
-    - ./**
-  include:
-    - ./**
-
 functions:
   analyticsNotificationsSlack:
-    handler: bin/handler
+    image: ${opt:account}.dkr.ecr.${self:provider.region}.amazonaws.com/analytics_notifications_slack_${self:provider.stage}@${opt:digest}
     events:
       - schedule: cron(0 10 * * ? *) # UTC

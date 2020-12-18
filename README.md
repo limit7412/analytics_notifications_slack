@@ -1,4 +1,4 @@
-# analytics_notifications_slack 
+# analytics_notifications_slack
 ![go-sls](https://github.com/limit7412/analytics_notifications_slack/workflows/go-sls/badge.svg)
 
 googleアナリティクスのpvを集計してランキングを作成して投稿するslackbot
@@ -10,7 +10,7 @@ googleアナリティクスのpvを集計してランキングを作成して投
       - googleアナリティクスapiへのアクセス用
     - ./env.yml
       - 環境変数を定義しserverless.ymlに渡すためのyml
-  - make deploy
+  - ./deploy.sh <account_id> <環境名>
 
 ### env.yml
 ```
