@@ -30,6 +30,14 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@master
 
+    - name: get env
+      run: |
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/env.yml .
+
+    - name: get secret
+      run: |
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/secret.json .
+
     - name: build and push ecr
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -38,14 +46,6 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-    - name: get env
-      run: |
-        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/env.yml .
-
-    - name: get secret
-      run: |
-        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/secret.json .
 
     - name: get aws account id
       id: get-aws-account
