@@ -10,7 +10,7 @@ googleアナリティクスのpvを集計してランキングを作成して投
       - googleアナリティクスapiへのアクセス用
     - ./env.yml
       - 環境変数を定義しserverless.ymlに渡すためのyml
-  - ./deploy.sh <account_id> <環境名>
+  - ./deploy.sh <環境名>
 
 ### env.yml
 ```

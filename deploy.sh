@@ -1,10 +1,11 @@
 #!/bin/bash
 
-account=${1}
-stg=${2}
+stg=${1}
 [ "$stg" = "" ] && stg="dev"
 
 region="ap-northeast-1"
+
+account=$(aws sts get-caller-identity | jq -r .Account)
 
 aws ecr get-login-password --region $region                                         |
 docker login --username AWS --password-stdin $account.dkr.ecr.$region.amazonaws.com
