@@ -15,6 +15,6 @@ custom:
 
 functions:
   analyticsNotificationsSlack:
-    image: ${opt:account, self:custom.defaultAccount}.dkr.ecr.${self:provider.region}.amazonaws.com/analytics_notifications_slack_${self:provider.stage}@${opt:digest, self:custom.defaultDigest}
+    handler: main
     events:
       - schedule: cron(0 10 * * ? *) # UTC
