@@ -1,8 +1,6 @@
-name: go-sls
+name: serverless-dev
 
-on:
-  push:
-    branches: [ master ]
+on: pull_request
 
 jobs:
   deploy:
@@ -28,11 +26,11 @@ jobs:
 
     - name: get env
       run: |
-        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/env.yml .
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/env.yml .
 
     - name: get secret
       run: |
-        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/prod/secret.json .
+        aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/secret.json .
 
     - name: build
       env:
@@ -43,4 +41,4 @@ jobs:
         docker cp $REPOSITORY:/work/main .
 
     - name: deploy
-      run: sls deploy --stage prod
+      run: sls deploy --stage dev
