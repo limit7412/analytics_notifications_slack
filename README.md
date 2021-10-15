@@ -21,4 +21,5 @@ googleアナリティクスのpvを集計してランキングを作成して投
   FAILD_WEBHOOK_URL: <エラー時に通知をするwebhook>
   FAILD_FALLBACK: <エラーを投稿すつ際に通知に表示するテキスト>
   SLACK_ID: <エラー時に通知をするslackのユーザーid>
+  TITLE_SPLIT: <ここに指定した文字列以降を無視する>
 ```
