@@ -25,7 +25,7 @@ func NewAnalyticsRepository() AnalyticsRepository {
 type Page struct {
 	Title string
 	Path  string
-	PV    string
+	PV    int
 }
 
 func (a *analyticsImpl) getService() (*analytics.Service, error) {
@@ -56,13 +56,17 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 	for _, item := range data.Rows {
 		if strings.Count(item[2], "/") != 1 {
 			title := strings.Split(item[0], os.Getenv("TITLE_SPLIT"))[0]
+			pv, err := strconv.Atoi(item[3])
+			if err != nil {
+				return nil, err
+			}
 			if _, ok := pageMap[title]; ok {
-				pageMap[title].PV += item[3]
+				pageMap[title].PV += pv
 			} else {
 				pageMap[title] = &Page{
 					Title: title,
 					Path:  item[1] + item[2],
-					PV:    item[3],
+					PV:    pv,
 				}
 			}
 		}
@@ -74,9 +78,7 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		a, _ := strconv.Atoi(result[i].PV)
-		b, _ := strconv.Atoi(result[j].PV)
-		return a > b
+		return result[i].PV > result[j].PV
 	})
 
 	return result, nil
