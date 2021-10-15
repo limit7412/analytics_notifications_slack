@@ -52,16 +52,25 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 		return nil, err
 	}
 
-	result := []*Page{}
-	for _, line := range data.Rows {
-		if strings.Count(line[2], "/") != 1 {
-			page := &Page{
-				Title: line[0],
-				Path:  line[1] + line[2],
-				PV:    line[3],
+	pageMap := make(map[string]*Page)
+	for _, item := range data.Rows {
+		if strings.Count(item[2], "/") != 1 {
+			title := strings.Split(item[0], os.Getenv("TITLE_SPLIT"))[0]
+			if _, ok := pageMap[title]; ok {
+				pageMap[title].PV += item[3]
+			} else {
+				pageMap[title] = &Page{
+					Title: title,
+					Path:  item[1] + item[2],
+					PV:    item[3],
+				}
 			}
-			result = append(result, page)
 		}
+	}
+
+	result := []*Page{}
+	for _, item := range pageMap {
+		result = append(result, item)
 	}
 
 	sort.Slice(result, func(i, j int) bool {
