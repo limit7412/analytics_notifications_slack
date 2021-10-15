@@ -81,11 +81,11 @@ func (n *notifyImpl) Error(err error) {
 
 func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Post {
 	text := []string{}
-	for i, line := range data {
+	for i, item := range data {
 		if i >= 5 {
 			break
 		}
-		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, line.Path, line.Title, line.PV))
+		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, item.Path, item.Title, item.PV))
 	}
 	post := &repository.Post{
 		Title: title,
