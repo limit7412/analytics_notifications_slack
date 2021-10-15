@@ -85,7 +85,7 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		if i >= 5 {
 			break
 		}
-		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %spv", i+1, item.Path, item.Title, item.PV))
+		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %dpv", i+1, item.Path, item.Title, item.PV))
 	}
 	post := &repository.Post{
 		Title: title,
