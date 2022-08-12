@@ -1,5 +1,5 @@
 # analytics_notifications_slack
-[![serverless](https://github.com/limit7412/analytics_notifications_slack/actions/workflows/serverless-prod.yml/badge.svg?branch=master)](https://github.com/limit7412/analytics_notifications_slack/actions/workflows/serverless-prod.yml)
+[![serverless-dev](https://github.com/limit7412/analytics_notifications_slack/actions/workflows/serverless-dev.yml/badge.svg?branch=develop)](https://github.com/limit7412/analytics_notifications_slack/actions/workflows/serverless-dev.yml)
 
 googleアナリティクスのpvを集計してランキングを作成して投稿するslackbot
 
