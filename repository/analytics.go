@@ -31,7 +31,7 @@ type Page struct {
 
 func (a *analyticsImpl) getService() (*analytics.Service, error) {
 	ctx := context.Background()
-	analyticsService, err := analytics.NewService(ctx, option.WithCredentialsFile("./credentials.json"))
+	analyticsService, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -51,23 +51,13 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 		},
 		Dimensions: []*analytics.Dimension{
 			{Name: "pageTitle"},
-			{Name: "hostname"},
+			{Name: "hostName"},
 			{Name: "pagePath"},
 		},
-		// Metrics: []*analytics.Metric{
-		// 	{Name: "active1DayUsers"},
-		// 	{Name: "active7DayUsers"},
-		// 	{Name: "active28DayUsers"},
-		// },
+		Metrics: []*analytics.Metric{
+			{Name: "screenPageViews"},
+		},
 	}
-
-	// data, err := service.Data.Ga.
-	// 	Get("ga:"+os.Getenv("PROFILE_ID"), start, end, "ga:sessions").
-	// 	Dimensions("ga:pageTitle,ga:hostname,ga:pagePath").
-	// 	Do()
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	pageMap := make(map[string]*Page)
 	for _, propertyId := range strings.Split(os.Getenv("PROPERTY_ID"), ",") {
@@ -76,21 +66,28 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 			return nil, err
 		}
 
-		for _, item := range data.Rows {
-			if strings.Count(item[2], "/") != 1 {
-				title := strings.Split(item[0], os.Getenv("TITLE_SPLIT"))[0]
-				pv, err := strconv.Atoi(item[3])
-				if err != nil {
-					return nil, err
-				}
-				if _, ok := pageMap[title]; ok {
-					pageMap[title].PV += pv
-				} else {
-					pageMap[title] = &Page{
-						Title: title,
-						Path:  item[1] + item[2],
-						PV:    pv,
-					}
+		for _, row := range data.Rows {
+			pageTitle := row.DimensionValues[0].Value
+			hostName := row.DimensionValues[1].Value
+			pagePath := row.DimensionValues[2].Value
+			screenPageViews := row.MetricValues[0].Value
+
+			if strings.Count(pagePath, "/") == 1 {
+				continue
+			}
+
+			title := strings.Split(pageTitle, os.Getenv("TITLE_SPLIT"))[0]
+			pv, err := strconv.Atoi(screenPageViews)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := pageMap[title]; ok {
+				pageMap[title].PV += pv
+			} else {
+				pageMap[title] = &Page{
+					Title: title,
+					Path:  hostName + pagePath,
+					PV:    pv,
 				}
 			}
 		}
