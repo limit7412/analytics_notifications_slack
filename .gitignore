@@ -22,3 +22,5 @@ env\.yml
 \.vscode/
 
 secret\.json
+
+main

@@ -8,7 +8,7 @@ container="analytics_notifications_slack_$stg"
 
 docker build -t $container .
 docker run --name $container -d $container /bin/sh
-docker cp $container:/work/bootstrap .
+docker cp $container:/work/main .
 docker rm $container
 
 sls deploy --stage $stg
