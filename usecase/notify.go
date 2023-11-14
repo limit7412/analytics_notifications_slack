@@ -3,7 +3,6 @@ package usecase
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,24 +29,25 @@ func (n *notifyImpl) Run() error {
 		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
 	})
 
+	today := time.Now().Format("2006-01-02")
+
 	adp := repository.NewAnalyticsRepository()
-	data, err := adp.GetSessions("today", "today")
+	data, err := adp.GetSessions(today, today)
 	if err != nil {
 		return err
 	}
 	line := n.createRankingData("今日のpv数ランキング", "#4286f4", data)
 	post = append(post, line)
 
-	today := time.Now()
-	month := today.Day()
-	data, err = adp.GetSessions(strconv.Itoa(month-1)+"daysAgo", "today")
+	month := time.Now().AddDate(0, -(time.Now().Day() - 1), 0).Format("2006-01-02")
+	data, err = adp.GetSessions(month, today)
 	if err != nil {
 		return err
 	}
 	line = n.createRankingData("今月のpv数ランキング", "#dbe031", data)
 	post = append(post, line)
 
-	data, err = adp.GetSessions("2005-01-01", "today")
+	data, err = adp.GetSessions("2015-08-14", today)
 	if err != nil {
 		return err
 	}
