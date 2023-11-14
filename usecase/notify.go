@@ -39,7 +39,7 @@ func (n *notifyImpl) Run() error {
 	line := n.createRankingData("今日のpv数ランキング", "#4286f4", data)
 	post = append(post, line)
 
-	month := time.Now().AddDate(0, -(time.Now().Day() - 1), 0).Format("2006-01-02")
+	month := time.Now().AddDate(0, 0, -(time.Now().Day() - 1)).Format("2006-01-02")
 	data, err = adp.GetSessions(month, today)
 	if err != nil {
 		return err
