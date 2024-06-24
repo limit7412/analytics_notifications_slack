@@ -1,5 +1,3 @@
-org: qazx7412
-app: analytics-notifications-slack
 service: analytics-notifications-slack
 
 provider:
