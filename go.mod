@@ -1,6 +1,8 @@
 module github.com/limit7412/analytics_notifications_slack
 
 go 1.23
+toolchain go1.24.1
+
 require (
 	github.com/aws/aws-lambda-go v1.47.0
 	google.golang.org/api v0.213.0
