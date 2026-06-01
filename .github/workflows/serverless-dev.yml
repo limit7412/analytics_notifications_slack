@@ -8,14 +8,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: checkout
+      uses: actions/checkout@v3
+
     - name: setup node.js
       uses: actions/setup-node@v4
+
+    - name: setup go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
 
     - name: install sls
       run: npm i -g serverless
 
-    - name: checkout
-      uses: actions/checkout@v3
+    - name: install plugins
+      run: npm ci
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -31,14 +39,6 @@ jobs:
     - name: get secret
       run: |
         aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/secret.json .
-
-    - name: build
-      env:
-        REPOSITORY: build-image
-      run: |
-        docker build -t $REPOSITORY .
-        docker run --name $REPOSITORY -d $REPOSITORY /bin/sh
-        docker cp $REPOSITORY:/work/main .
 
     - name: deploy
       run: sls deploy --stage dev

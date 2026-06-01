@@ -23,4 +23,6 @@ env\.yml
 
 secret\.json
 
-main
+bootstrap
+
+node_modules
