@@ -2,20 +2,33 @@ service: analytics-notifications-slack
 
 provider:
   name: aws
-  runtime: go1.x
+  runtime: provided.al2023
   timeout: 380
   stage: ${opt:stage, self:custom.defaultStage}
   region: ap-northeast-1
   environment:
     ${file(./env.yml)}
 
+plugins:
+  - serverless-plugin-scripts
+
 custom:
   defaultAccount: dummy
   defaultDigest: dummy
   defaultStage: dev
+  scripts:
+    hooks:
+      # ローカルでのビルド時に bootstrap を生成する
+      'before:package:createDeploymentArtifacts': GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bootstrap handler/main.go
+
+package:
+  patterns:
+    - '!./**'
+    - ./bootstrap
+    - ./secret.json
 
 functions:
   analyticsNotificationsSlack:
-    handler: main
+    handler: bootstrap
     events:
       - schedule: cron(0 10 * * ? *) # UTC

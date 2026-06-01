@@ -5,12 +5,15 @@ googleアナリティクスのpvを集計してランキングを作成して投
 
 ## deploy
   - 事前にserverlessからawsに接続を確立する
+  - serverless-plugin-scripts をインストール
+    - `npm ci`
   - 以下の2つのファイルを用意
     - ./secret.json
       - googleアナリティクスapiへのアクセス用
     - ./env.yml
       - 環境変数を定義しserverless.ymlに渡すためのyml
-  - ./deploy.sh <環境名>
+  - `sls deploy --stage <環境名>`
+    - serverless-plugin-scripts により、パッケージング時にローカルで `bootstrap` がビルドされる
 
 ### env.yml
 ```

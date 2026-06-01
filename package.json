@@ -1,0 +1,10 @@
+{
+  "name": "analytics-notifications-slack",
+  "version": "1.0.0",
+  "description": "googleアナリティクスのpvを集計してランキングを作成して投稿するslackbot",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "serverless-plugin-scripts": "^1.0.2"
+  }
+}

@@ -6,22 +6,32 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC トークンの発行に必要
+      contents: read
     steps:
-
-    - name: setup node.js
-      uses: actions/setup-node@v4
-
-    - name: install sls
-      run: npm i -g serverless
 
     - name: checkout
       uses: actions/checkout@v3
 
+    - name: setup node.js
+      uses: actions/setup-node@v4
+
+    - name: setup go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+
+    - name: install sls
+      run: npm i -g serverless
+
+    - name: install plugins
+      run: npm ci
+
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ap-northeast-1
 
     - name: get env
@@ -31,14 +41,6 @@ jobs:
     - name: get secret
       run: |
         aws s3 cp s3://limit7412-workflow-env/analytics_notifications_slack/dev/secret.json .
-
-    - name: build
-      env:
-        REPOSITORY: build-image
-      run: |
-        docker build -t $REPOSITORY .
-        docker run --name $REPOSITORY -d $REPOSITORY /bin/sh
-        docker cp $REPOSITORY:/work/main .
 
     - name: deploy
       run: sls deploy --stage dev
