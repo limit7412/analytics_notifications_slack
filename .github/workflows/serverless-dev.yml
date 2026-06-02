@@ -5,7 +5,7 @@ on: pull_request
 jobs:
   deploy:
     name: deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       id-token: write # OIDC トークンの発行に必要
       contents: read
