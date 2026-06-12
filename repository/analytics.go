@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"cmp"
 	"context"
+	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -12,15 +15,21 @@ import (
 )
 
 type AnalyticsRepository interface {
-	GetSessions(start string, end string) ([]*Page, error)
+	GetSessions(ctx context.Context, start string, end string) ([]*Page, error)
 }
 
 type analyticsImpl struct {
+	service *analytics.Service
 }
 
-// NewAnalyticsRepository access to analytics
-func NewAnalyticsRepository() AnalyticsRepository {
-	return &analyticsImpl{}
+// NewAnalyticsRepository は Google アナリティクスへアクセスするリポジトリを生成する
+func NewAnalyticsRepository(ctx context.Context) (AnalyticsRepository, error) {
+	service, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
+	if err != nil {
+		return nil, fmt.Errorf("create analytics service: %w", err)
+	}
+
+	return &analyticsImpl{service: service}, nil
 }
 
 type Page struct {
@@ -29,22 +38,7 @@ type Page struct {
 	PV    int
 }
 
-func (a *analyticsImpl) getService() (*analytics.Service, error) {
-	ctx := context.Background()
-	analyticsService, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	return analyticsService, nil
-}
-
-func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
-	service, err := a.getService()
-	if err != nil {
-		return nil, err
-	}
-
+func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end string) ([]*Page, error) {
 	runReportRequest := &analytics.RunReportRequest{
 		DateRanges: []*analytics.DateRange{
 			{StartDate: start, EndDate: end},
@@ -59,48 +53,81 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 		},
 	}
 
+	titleSplit := os.Getenv("TITLE_SPLIT")
 	pageMap := make(map[string]*Page)
+	processed := 0
 	for _, propertyId := range strings.Split(os.Getenv("PROPERTY_ID"), ",") {
-		data, err := service.Properties.RunReport("properties/"+propertyId, runReportRequest).Do()
+		id := strings.TrimSpace(propertyId)
+		if id == "" {
+			continue
+		}
+		processed++
+
+		data, err := a.service.Properties.RunReport("properties/"+id, runReportRequest).Context(ctx).Do()
 		if err != nil {
+			return nil, fmt.Errorf("run report for property %s: %w", id, err)
+		}
+
+		if err := aggregateRows(pageMap, data.Rows, titleSplit); err != nil {
 			return nil, err
 		}
+	}
 
-		for _, row := range data.Rows {
-			pageTitle := row.DimensionValues[0].Value
-			hostName := row.DimensionValues[1].Value
-			pagePath := row.DimensionValues[2].Value
-			screenPageViews := row.MetricValues[0].Value
+	// PROPERTY_ID が未設定/空の場合、空の(だが"成功"扱いの)ランキングを黙って
+	// 返すのではなく、設定不備のエラーとして扱う。
+	if processed == 0 {
+		return nil, fmt.Errorf("no valid PROPERTY_ID configured")
+	}
 
-			if strings.Count(pagePath, "/") == 1 {
-				continue
-			}
+	return sortPages(pageMap), nil
+}
 
-			title := strings.Split(pageTitle, os.Getenv("TITLE_SPLIT"))[0]
-			pv, err := strconv.Atoi(screenPageViews)
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := pageMap[title]; ok {
-				pageMap[title].PV += pv
-			} else {
-				pageMap[title] = &Page{
-					Title: title,
-					Path:  hostName + pagePath,
-					PV:    pv,
-				}
+// aggregateRows はレポートの行を pageMap に集約し、同一タイトルの PV を合算する。
+// トップレベルのパス(スラッシュ1つ)はスキップする。想定するディメンション/
+// メトリクスを欠く行は、panic を避けるため防御的にスキップする。
+func aggregateRows(pageMap map[string]*Page, rows []*analytics.Row, titleSplit string) error {
+	for _, row := range rows {
+		if row == nil || len(row.DimensionValues) < 3 || len(row.MetricValues) < 1 {
+			continue
+		}
+
+		pageTitle := row.DimensionValues[0].Value
+		hostName := row.DimensionValues[1].Value
+		pagePath := row.DimensionValues[2].Value
+		screenPageViews := row.MetricValues[0].Value
+
+		if strings.Count(pagePath, "/") == 1 {
+			continue
+		}
+
+		title := pageTitle
+		if titleSplit != "" {
+			title = strings.Split(pageTitle, titleSplit)[0]
+		}
+		pv, err := strconv.Atoi(screenPageViews)
+		if err != nil {
+			return fmt.Errorf("parse screenPageViews %q: %w", screenPageViews, err)
+		}
+		if _, ok := pageMap[title]; ok {
+			pageMap[title].PV += pv
+		} else {
+			pageMap[title] = &Page{
+				Title: title,
+				Path:  hostName + pagePath,
+				PV:    pv,
 			}
 		}
 	}
 
-	result := []*Page{}
-	for _, item := range pageMap {
-		result = append(result, item)
-	}
+	return nil
+}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].PV > result[j].PV
+// sortPages はページを PV の降順に並べて返す。
+func sortPages(pageMap map[string]*Page) []*Page {
+	result := slices.Collect(maps.Values(pageMap))
+	slices.SortFunc(result, func(a, b *Page) int {
+		return cmp.Compare(b.PV, a.PV)
 	})
 
-	return result, nil
+	return result
 }
