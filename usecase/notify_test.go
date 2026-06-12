@@ -48,7 +48,7 @@ func TestCreateRankingData(t *testing.T) {
 	if post.Title != "ランキング" || post.Color != "#fff" {
 		t.Errorf("unexpected title/color: %+v", post)
 	}
-	// Only the top 5 entries should be rendered.
+	// 上位5件のみが描画される。
 	if lines := strings.Count(post.Text, "\n") + 1; lines != 5 {
 		t.Errorf("got %d lines, want 5", lines)
 	}
@@ -80,7 +80,7 @@ func TestRunSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// One call per date range (today, month, cumulative), run concurrently.
+	// 期間(今日・今月・累計)ごとに1回ずつ、並列に呼び出される。
 	if got := analytics.calls.Load(); got != 3 {
 		t.Errorf("GetSessions called %d times, want 3", got)
 	}
@@ -90,7 +90,7 @@ func TestRunSuccess(t *testing.T) {
 	if slack.paths[0] != "https://hooks.example/success" {
 		t.Errorf("posted to %q", slack.paths[0])
 	}
-	// Fallback header + 3 ranking attachments, in order.
+	// 先頭のフォールバック + 3つのランキング添付が順番通りに並ぶ。
 	if got := len(slack.posts[0]); got != 4 {
 		t.Fatalf("attachments = %d, want 4", got)
 	}
@@ -125,7 +125,7 @@ func TestError(t *testing.T) {
 	slack := &fakeSlack{}
 	n := NewNotifyUsecase(&fakeAnalytics{}, slack)
 
-	// Even with an already-cancelled context the notification must be sent.
+	// 既にキャンセル済みのコンテキストでも通知は送られなければならない。
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	n.Error(ctx, errors.New("something broke"))

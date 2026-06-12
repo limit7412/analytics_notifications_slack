@@ -24,7 +24,7 @@ func TestAggregateRows(t *testing.T) {
 		name       string
 		rows       []*analytics.Row
 		titleSplit string
-		want       map[string]int // title -> PV
+		want       map[string]int // タイトル -> PV
 		wantPath   map[string]string
 		wantErr    bool
 	}{
@@ -77,7 +77,7 @@ func TestAggregateRows(t *testing.T) {
 			name: "skips malformed rows",
 			rows: []*analytics.Row{
 				nil,
-				{DimensionValues: []*analytics.DimensionValue{{Value: "x"}}}, // too few dimensions
+				{DimensionValues: []*analytics.DimensionValue{{Value: "x"}}}, // ディメンション不足
 				row("記事E", "example.com", "/blog/g", "9"),
 			},
 			titleSplit: " | ",
