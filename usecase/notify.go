@@ -1,7 +1,9 @@
 package usecase
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -10,73 +12,77 @@ import (
 )
 
 type NotifyUsecase interface {
-	Run() error
-	Error(err error)
+	Run(ctx context.Context) error
+	Error(ctx context.Context, err error)
 }
 
 type notifyImpl struct {
+	analytics repository.AnalyticsRepository
+	slack     repository.SlackRepository
 }
 
 // NewNotifyUsecase notification analytics to slack
-func NewNotifyUsecase() NotifyUsecase {
-	return &notifyImpl{}
+func NewNotifyUsecase(analytics repository.AnalyticsRepository, slack repository.SlackRepository) NotifyUsecase {
+	return &notifyImpl{
+		analytics: analytics,
+		slack:     slack,
+	}
 }
 
-func (n *notifyImpl) Run() error {
-	post := []*repository.Post{}
-	post = append(post, &repository.Post{
-		Fallback: os.Getenv("SUCCESS_FALLBACK"),
-		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
-	})
+func (n *notifyImpl) Run(ctx context.Context) error {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	month := now.AddDate(0, 0, -(now.Day() - 1)).Format("2006-01-02")
 
-	today := time.Now().Format("2006-01-02")
-
-	adp := repository.NewAnalyticsRepository()
-	data, err := adp.GetSessions(today, today)
-	if err != nil {
-		return err
+	posts := []*repository.Post{
+		{
+			Fallback: os.Getenv("SUCCESS_FALLBACK"),
+			Pretext:  os.Getenv("SUCCESS_FALLBACK"),
+		},
 	}
-	line := n.createRankingData("今日のpv数ランキング", "#4286f4", data)
-	post = append(post, line)
 
-	month := time.Now().AddDate(0, 0, -(time.Now().Day() - 1)).Format("2006-01-02")
-	data, err = adp.GetSessions(month, today)
-	if err != nil {
-		return err
+	ranges := []struct {
+		title string
+		color string
+		start string
+		end   string
+	}{
+		{"今日のpv数ランキング", "#4286f4", today, today},
+		{"今月のpv数ランキング", "#dbe031", month, today},
+		{"累計pv数ランキング", "#41a300", "2015-08-14", today},
 	}
-	line = n.createRankingData("今月のpv数ランキング", "#dbe031", data)
-	post = append(post, line)
 
-	data, err = adp.GetSessions("2015-08-14", today)
-	if err != nil {
-		return err
+	for _, r := range ranges {
+		data, err := n.analytics.GetSessions(ctx, r.start, r.end)
+		if err != nil {
+			return fmt.Errorf("get sessions (%s): %w", r.title, err)
+		}
+		posts = append(posts, n.createRankingData(r.title, r.color, data))
 	}
-	line = n.createRankingData("累計pv数ランキング", "#41a300", data)
-	post = append(post, line)
 
-	slack := repository.NewSlackRepository()
-	err = slack.Post(os.Getenv("SUCCESS_WEBHOOK_URL"), post)
-	if err != nil {
-		return err
+	if err := n.slack.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), posts); err != nil {
+		return fmt.Errorf("post to slack: %w", err)
 	}
 
 	return nil
 }
 
-func (n *notifyImpl) Error(err error) {
-	slack := repository.NewSlackRepository()
+func (n *notifyImpl) Error(ctx context.Context, err error) {
+	slog.ErrorContext(ctx, "notify failed", slog.Any("error", err))
 
-	post := []*repository.Post{}
-	post = append(post, &repository.Post{
-		Fallback: os.Getenv("FAILD_FALLBACK"),
-		Pretext:  "<@" + os.Getenv("SLACK_ID") + "> " + os.Getenv("FAILD_FALLBACK"),
-		Title:    err.Error(),
-		Color:    "#EB4646",
-		Footer:   "analytics_notifications_slack",
-	})
+	posts := []*repository.Post{
+		{
+			Fallback: os.Getenv("FAILD_FALLBACK"),
+			Pretext:  "<@" + os.Getenv("SLACK_ID") + "> " + os.Getenv("FAILD_FALLBACK"),
+			Title:    err.Error(),
+			Color:    "#EB4646",
+			Footer:   "analytics_notifications_slack",
+		},
+	}
 
-	_ = slack.Post(os.Getenv("FAILD_WEBHOOK_URL"), post)
-	fmt.Print(err)
+	if postErr := n.slack.Post(ctx, os.Getenv("FAILD_WEBHOOK_URL"), posts); postErr != nil {
+		slog.ErrorContext(ctx, "failed to post error to slack", slog.Any("error", postErr))
+	}
 }
 
 func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Post {
@@ -87,11 +93,10 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		}
 		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %dpv", i+1, item.Path, item.Title, item.PV))
 	}
-	post := &repository.Post{
+
+	return &repository.Post{
 		Title: title,
 		Text:  strings.Join(text, "\n"),
 		Color: color,
 	}
-
-	return post
 }

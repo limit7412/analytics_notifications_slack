@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"cmp"
 	"context"
+	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -12,15 +15,21 @@ import (
 )
 
 type AnalyticsRepository interface {
-	GetSessions(start string, end string) ([]*Page, error)
+	GetSessions(ctx context.Context, start string, end string) ([]*Page, error)
 }
 
 type analyticsImpl struct {
+	service *analytics.Service
 }
 
 // NewAnalyticsRepository access to analytics
-func NewAnalyticsRepository() AnalyticsRepository {
-	return &analyticsImpl{}
+func NewAnalyticsRepository(ctx context.Context) (AnalyticsRepository, error) {
+	service, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
+	if err != nil {
+		return nil, fmt.Errorf("create analytics service: %w", err)
+	}
+
+	return &analyticsImpl{service: service}, nil
 }
 
 type Page struct {
@@ -29,22 +38,7 @@ type Page struct {
 	PV    int
 }
 
-func (a *analyticsImpl) getService() (*analytics.Service, error) {
-	ctx := context.Background()
-	analyticsService, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	return analyticsService, nil
-}
-
-func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
-	service, err := a.getService()
-	if err != nil {
-		return nil, err
-	}
-
+func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end string) ([]*Page, error) {
 	runReportRequest := &analytics.RunReportRequest{
 		DateRanges: []*analytics.DateRange{
 			{StartDate: start, EndDate: end},
@@ -61,9 +55,9 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 
 	pageMap := make(map[string]*Page)
 	for _, propertyId := range strings.Split(os.Getenv("PROPERTY_ID"), ",") {
-		data, err := service.Properties.RunReport("properties/"+propertyId, runReportRequest).Do()
+		data, err := a.service.Properties.RunReport("properties/"+propertyId, runReportRequest).Context(ctx).Do()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("run report for property %s: %w", propertyId, err)
 		}
 
 		for _, row := range data.Rows {
@@ -79,7 +73,7 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 			title := strings.Split(pageTitle, os.Getenv("TITLE_SPLIT"))[0]
 			pv, err := strconv.Atoi(screenPageViews)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("parse screenPageViews %q: %w", screenPageViews, err)
 			}
 			if _, ok := pageMap[title]; ok {
 				pageMap[title].PV += pv
@@ -93,13 +87,9 @@ func (a *analyticsImpl) GetSessions(start string, end string) ([]*Page, error) {
 		}
 	}
 
-	result := []*Page{}
-	for _, item := range pageMap {
-		result = append(result, item)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].PV > result[j].PV
+	result := slices.Collect(maps.Values(pageMap))
+	slices.SortFunc(result, func(a, b *Page) int {
+		return cmp.Compare(b.PV, a.PV)
 	})
 
 	return result, nil

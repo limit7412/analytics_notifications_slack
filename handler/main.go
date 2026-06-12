@@ -2,27 +2,31 @@ package main
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/limit7412/analytics_notifications_slack/repository"
 	"github.com/limit7412/analytics_notifications_slack/usecase"
 )
 
-// Response is of type APIGatewayProxyResponse since we're leveraging the
-// AWS Lambda Proxy Request functionality (default behavior)
-//
-// https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
-type Response events.CloudWatchEvent
+// Handler is our lambda handler invoked by the `lambda.Start` function call.
+// It is triggered on a schedule (EventBridge), so it takes no input payload.
+func Handler(ctx context.Context) error {
+	slack := repository.NewSlackRepository()
 
-// Handler is our lambda handler invoked by the `lambda.Start` function call
-func Handler(ctx context.Context) (Response, error) {
-	app := usecase.NewNotifyUsecase()
-	err := app.Run()
+	analytics, err := repository.NewAnalyticsRepository(ctx)
 	if err != nil {
-		app.Error(err)
+		slog.ErrorContext(ctx, "failed to init analytics repository", slog.Any("error", err))
+		return err
 	}
 
-	return Response{}, nil
+	app := usecase.NewNotifyUsecase(analytics, slack)
+	if err := app.Run(ctx); err != nil {
+		app.Error(ctx, err)
+		return err
+	}
+
+	return nil
 }
 
 func main() {
