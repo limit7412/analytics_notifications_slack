@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/limit7412/analytics_notifications_slack/repository"
+	"golang.org/x/sync/errgroup"
 )
 
 type NotifyUsecase interface {
@@ -34,13 +35,6 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 	today := now.Format("2006-01-02")
 	month := now.AddDate(0, 0, -(now.Day() - 1)).Format("2006-01-02")
 
-	posts := []*repository.Post{
-		{
-			Fallback: os.Getenv("SUCCESS_FALLBACK"),
-			Pretext:  os.Getenv("SUCCESS_FALLBACK"),
-		},
-	}
-
 	ranges := []struct {
 		title string
 		color string
@@ -52,13 +46,30 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 		{"累計pv数ランキング", "#41a300", "2015-08-14", today},
 	}
 
-	for _, r := range ranges {
-		data, err := n.analytics.GetSessions(ctx, r.start, r.end)
-		if err != nil {
-			return fmt.Errorf("get sessions (%s): %w", r.title, err)
-		}
-		posts = append(posts, n.createRankingData(r.title, r.color, data))
+	// Fetch each date range concurrently; results are stored by index to
+	// preserve the original ordering.
+	rankings := make([]*repository.Post, len(ranges))
+	g, ctx := errgroup.WithContext(ctx)
+	for i, r := range ranges {
+		g.Go(func() error {
+			data, err := n.analytics.GetSessions(ctx, r.start, r.end)
+			if err != nil {
+				return fmt.Errorf("get sessions (%s): %w", r.title, err)
+			}
+			rankings[i] = n.createRankingData(r.title, r.color, data)
+			return nil
+		})
 	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	posts := make([]*repository.Post, 0, len(ranges)+1)
+	posts = append(posts, &repository.Post{
+		Fallback: os.Getenv("SUCCESS_FALLBACK"),
+		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
+	})
+	posts = append(posts, rankings...)
 
 	if err := n.slack.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), posts); err != nil {
 		return fmt.Errorf("post to slack: %w", err)
@@ -80,7 +91,12 @@ func (n *notifyImpl) Error(ctx context.Context, err error) {
 		},
 	}
 
-	if postErr := n.slack.Post(ctx, os.Getenv("FAILD_WEBHOOK_URL"), posts); postErr != nil {
+	// Use a detached context so the failure notification is still delivered
+	// even when the incoming ctx was already cancelled (e.g. Lambda timeout).
+	notifyCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+
+	if postErr := n.slack.Post(notifyCtx, os.Getenv("FAILD_WEBHOOK_URL"), posts); postErr != nil {
 		slog.ErrorContext(ctx, "failed to post error to slack", slog.Any("error", postErr))
 	}
 }

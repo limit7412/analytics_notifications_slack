@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0
+	golang.org/x/sync v0.21.0
 	google.golang.org/api v0.284.0
 )
 
