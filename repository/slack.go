@@ -19,7 +19,7 @@ type slackImpl struct {
 	client *http.Client
 }
 
-// NewSlackRepository access to slack
+// NewSlackRepository は Slack へアクセスするリポジトリを生成する
 func NewSlackRepository() SlackRepository {
 	return &slackImpl{
 		client: &http.Client{Timeout: 10 * time.Second},

@@ -22,7 +22,7 @@ type notifyImpl struct {
 	slack     repository.SlackRepository
 }
 
-// NewNotifyUsecase notification analytics to slack
+// NewNotifyUsecase は分析結果を Slack へ通知するユースケースを生成する
 func NewNotifyUsecase(analytics repository.AnalyticsRepository, slack repository.SlackRepository) NotifyUsecase {
 	return &notifyImpl{
 		analytics: analytics,
@@ -46,8 +46,7 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 		{"累計pv数ランキング", "#41a300", "2015-08-14", today},
 	}
 
-	// Fetch each date range concurrently; results are stored by index to
-	// preserve the original ordering.
+	// 各期間を並列に取得する。結果はインデックスで格納し、元の順序を保持する。
 	rankings := make([]*repository.Post, len(ranges))
 	g, ctx := errgroup.WithContext(ctx)
 	for i, r := range ranges {
@@ -91,8 +90,8 @@ func (n *notifyImpl) Error(ctx context.Context, err error) {
 		},
 	}
 
-	// Use a detached context so the failure notification is still delivered
-	// even when the incoming ctx was already cancelled (e.g. Lambda timeout).
+	// 渡された ctx が既にキャンセル済み(例: Lambda タイムアウト)でも失敗通知を
+	// 届けられるよう、キャンセルを切り離したコンテキストを使う。
 	notifyCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 

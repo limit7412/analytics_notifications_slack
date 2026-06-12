@@ -22,7 +22,7 @@ type analyticsImpl struct {
 	service *analytics.Service
 }
 
-// NewAnalyticsRepository access to analytics
+// NewAnalyticsRepository は Google アナリティクスへアクセスするリポジトリを生成する
 func NewAnalyticsRepository(ctx context.Context) (AnalyticsRepository, error) {
 	service, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
 	if err != nil {
@@ -73,8 +73,8 @@ func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end strin
 		}
 	}
 
-	// Treat a missing/empty PROPERTY_ID as a configuration error rather than
-	// silently returning an empty (but "successful") ranking.
+	// PROPERTY_ID が未設定/空の場合、空の(だが"成功"扱いの)ランキングを黙って
+	// 返すのではなく、設定不備のエラーとして扱う。
 	if processed == 0 {
 		return nil, fmt.Errorf("no valid PROPERTY_ID configured")
 	}
@@ -82,9 +82,9 @@ func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end strin
 	return sortPages(pageMap), nil
 }
 
-// aggregateRows folds report rows into pageMap, summing PV for duplicate titles.
-// Top-level paths (a single "/") are skipped. Rows missing the expected
-// dimensions or metrics are skipped defensively to avoid panics.
+// aggregateRows はレポートの行を pageMap に集約し、同一タイトルの PV を合算する。
+// トップレベルのパス(スラッシュ1つ)はスキップする。想定するディメンション/
+// メトリクスを欠く行は、panic を避けるため防御的にスキップする。
 func aggregateRows(pageMap map[string]*Page, rows []*analytics.Row, titleSplit string) error {
 	for _, row := range rows {
 		if row == nil || len(row.DimensionValues) < 3 || len(row.MetricValues) < 1 {
@@ -122,7 +122,7 @@ func aggregateRows(pageMap map[string]*Page, rows []*analytics.Row, titleSplit s
 	return nil
 }
 
-// sortPages returns the pages sorted by descending PV.
+// sortPages はページを PV の降順に並べて返す。
 func sortPages(pageMap map[string]*Page) []*Page {
 	result := slices.Collect(maps.Values(pageMap))
 	slices.SortFunc(result, func(a, b *Page) int {

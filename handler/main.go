@@ -9,27 +9,27 @@ import (
 	"github.com/limit7412/analytics_notifications_slack/usecase"
 )
 
-// Repositories are initialised lazily and cached across warm Lambda
-// invocations to avoid re-establishing connections/credentials every call.
+// リポジトリは遅延初期化し、Lambda のウォームスタート間でキャッシュ・再利用する
+// ことで、呼び出しごとの接続・認証情報の再確立コストを避ける。
 var (
 	slackRepo     repository.SlackRepository
 	analyticsRepo repository.AnalyticsRepository
 )
 
-// Handler is our lambda handler invoked by the `lambda.Start` function call.
-// It is triggered on a schedule (EventBridge), so it takes no input payload.
+// Handler は `lambda.Start` から呼び出される Lambda ハンドラー。
+// スケジュール(EventBridge)起動のため、入力ペイロードは受け取らない。
 func Handler(ctx context.Context) error {
 	if slackRepo == nil {
 		slackRepo = repository.NewSlackRepository()
 	}
 
 	if analyticsRepo == nil {
-		// Use a background context so the cached service is not bound to a
-		// single invocation's (cancellable) context.
+		// キャッシュするサービスを単一呼び出しの(キャンセルされうる)コンテキストに
+		// 紐付けないよう、background コンテキストで生成する。
 		repo, err := repository.NewAnalyticsRepository(context.Background())
 		if err != nil {
 			err = fmt.Errorf("init analytics repository: %w", err)
-			// slackRepo is already available, so still surface the failure.
+			// slackRepo は生成済みなので、この経路でも失敗通知を送る。
 			usecase.NewNotifyUsecase(nil, slackRepo).Error(ctx, err)
 			return err
 		}
