@@ -16,9 +16,15 @@ var (
 	analyticsRepo repository.AnalyticsRepository
 )
 
+// Response はハンドラーの実行結果を表す。
+// テスト等で実行結果を判定できるよう、成功時にも返却する。
+type Response struct {
+	Message string `json:"message"`
+}
+
 // Handler は `lambda.Start` から呼び出される Lambda ハンドラー。
 // スケジュール(EventBridge)起動のため、入力ペイロードは受け取らない。
-func Handler(ctx context.Context) error {
+func Handler(ctx context.Context) (Response, error) {
 	if slackRepo == nil {
 		slackRepo = repository.NewSlackRepository()
 	}
@@ -31,7 +37,7 @@ func Handler(ctx context.Context) error {
 			err = fmt.Errorf("init analytics repository: %w", err)
 			// slackRepo は生成済みなので、この経路でも失敗通知を送る。
 			usecase.NewNotifyUsecase(nil, slackRepo).Error(ctx, err)
-			return err
+			return Response{}, err
 		}
 		analyticsRepo = repo
 	}
@@ -39,10 +45,10 @@ func Handler(ctx context.Context) error {
 	app := usecase.NewNotifyUsecase(analyticsRepo, slackRepo)
 	if err := app.Run(ctx); err != nil {
 		app.Error(ctx, err)
-		return err
+		return Response{}, err
 	}
 
-	return nil
+	return Response{Message: "success"}, nil
 }
 
 func main() {
