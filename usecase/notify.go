@@ -47,11 +47,13 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 	}
 
 	// 各期間を並列に取得する。結果はインデックスで格納し、元の順序を保持する。
+	// errgroup の派生 ctx (gctx) は Wait 後にキャンセルされるため取得処理にのみ使い、
+	// 成功通知には元の ctx を使う。
 	rankings := make([]*repository.Post, len(ranges))
-	g, ctx := errgroup.WithContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 	for i, r := range ranges {
 		g.Go(func() error {
-			data, err := n.analytics.GetSessions(ctx, r.start, r.end)
+			data, err := n.analytics.GetSessions(gctx, r.start, r.end)
 			if err != nil {
 				return fmt.Errorf("get sessions (%s): %w", r.title, err)
 			}
