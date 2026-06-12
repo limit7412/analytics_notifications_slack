@@ -25,14 +25,16 @@ func (f *fakeAnalytics) GetSessions(_ context.Context, _ string, _ string) ([]*r
 }
 
 type fakeSlack struct {
-	posts [][]*repository.Post
-	paths []string
-	err   error
+	posts    [][]*repository.Post
+	paths    []string
+	postErrs []error // Post 呼び出し時点の ctx.Err()
+	err      error
 }
 
-func (f *fakeSlack) Post(_ context.Context, path string, msg []*repository.Post) error {
+func (f *fakeSlack) Post(ctx context.Context, path string, msg []*repository.Post) error {
 	f.paths = append(f.paths, path)
 	f.posts = append(f.posts, msg)
+	f.postErrs = append(f.postErrs, ctx.Err())
 	return f.err
 }
 
@@ -89,6 +91,11 @@ func TestRunSuccess(t *testing.T) {
 	}
 	if slack.paths[0] != "https://hooks.example/success" {
 		t.Errorf("posted to %q", slack.paths[0])
+	}
+	// 成功通知には、errgroup の Wait 後にキャンセルされる派生 ctx ではなく
+	// 有効な ctx が渡されなければならない。
+	if slack.postErrs[0] != nil {
+		t.Errorf("slack.Post received a cancelled context: %v", slack.postErrs[0])
 	}
 	// 先頭のフォールバック + 3つのランキング添付が順番通りに並ぶ。
 	if got := len(slack.posts[0]); got != 4 {
