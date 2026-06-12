@@ -55,11 +55,13 @@ func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end strin
 
 	titleSplit := os.Getenv("TITLE_SPLIT")
 	pageMap := make(map[string]*Page)
+	processed := 0
 	for _, propertyId := range strings.Split(os.Getenv("PROPERTY_ID"), ",") {
 		id := strings.TrimSpace(propertyId)
 		if id == "" {
 			continue
 		}
+		processed++
 
 		data, err := a.service.Properties.RunReport("properties/"+id, runReportRequest).Context(ctx).Do()
 		if err != nil {
@@ -69,6 +71,12 @@ func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end strin
 		if err := aggregateRows(pageMap, data.Rows, titleSplit); err != nil {
 			return nil, err
 		}
+	}
+
+	// Treat a missing/empty PROPERTY_ID as a configuration error rather than
+	// silently returning an empty (but "successful") ranking.
+	if processed == 0 {
+		return nil, fmt.Errorf("no valid PROPERTY_ID configured")
 	}
 
 	return sortPages(pageMap), nil
