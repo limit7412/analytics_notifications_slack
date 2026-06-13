@@ -16,10 +16,6 @@ plugins:
 # スケジュール実行は prod ステージでのみ有効にする。
 # それ以外のステージ(dev等)ではルールはデプロイされるが無効化される。
 # ステージごとの値は params で定義する。
-# (custom + 動的キー(scheduleEnabled.${sls:stage}) + 変数参照では serverless v4 で
-#  enabled に boolean がそのまま渡らず、prod でも EventBridge ルールが DISABLED の
-#  まま作成されてスケジュール実行されなかった。params はステージごとに値を重ね、
-#  boolean 型を保持したまま enabled へ渡せる。)
 params:
   default:
     scheduleEnabled: false
