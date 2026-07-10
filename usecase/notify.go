@@ -109,6 +109,9 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		if i >= 5 {
 			break
 		}
+		if item == nil {
+			continue
+		}
 		// リンクは中立表現の markdown 形式で保持し、変換は各アダプタに任せる。
 		text = append(text, fmt.Sprintf("[%d] [%s](https://%s): %dpv", i+1, item.Title, item.Path, item.PV))
 	}

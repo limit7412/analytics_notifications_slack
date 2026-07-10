@@ -47,9 +47,13 @@ func toMrkdwnLinks(text string) string {
 func (a *slackImpl) Post(ctx context.Context, webhookURL string, msgs []*Message) error {
 	attachments := make([]*attachment, 0, len(msgs))
 	for _, msg := range msgs {
+		if msg == nil {
+			continue
+		}
 		pretext := msg.Pretext
-		if msg.Mention {
-			pretext = "<@" + mentionID() + "> " + pretext
+		// ID 未設定時は壊れたメンション `<@>` を出力しない。
+		if id := mentionID(); msg.Mention && id != "" {
+			pretext = "<@" + id + "> " + pretext
 		}
 		attachments = append(attachments, &attachment{
 			Fallback: msg.Fallback,

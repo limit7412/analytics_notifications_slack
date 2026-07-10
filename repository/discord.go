@@ -57,8 +57,12 @@ func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Messa
 	mentioned := false
 	embeds := []*discordEmbed{}
 	for _, msg := range msgs {
-		if msg.Mention && !mentioned {
-			contentParts = append(contentParts, "<@"+mentionID()+">")
+		if msg == nil {
+			continue
+		}
+		// ID 未設定時は壊れたメンション `<@>` を出力しない。
+		if id := mentionID(); msg.Mention && !mentioned && id != "" {
+			contentParts = append(contentParts, "<@"+id+">")
 			mentioned = true
 		}
 		if msg.Pretext != "" {
@@ -141,10 +145,14 @@ func hexToColor(hex string) int {
 }
 
 // truncateRunes は文字数(rune 数)が limit を超える場合に切り詰める。
+// []rune への変換によるアロケーションを避けるため、byte offset で走査する。
 func truncateRunes(s string, limit int) string {
-	runes := []rune(s)
-	if len(runes) <= limit {
-		return s
+	count := 0
+	for i := range s {
+		if count == limit {
+			return s[:i]
+		}
+		count++
 	}
-	return string(runes[:limit])
+	return s
 }
