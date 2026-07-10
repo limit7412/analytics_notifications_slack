@@ -19,14 +19,14 @@ type NotifyUsecase interface {
 
 type notifyImpl struct {
 	analytics repository.AnalyticsRepository
-	slack     repository.SlackRepository
+	notify    repository.NotifyRepository
 }
 
-// NewNotifyUsecase は分析結果を Slack へ通知するユースケースを生成する
-func NewNotifyUsecase(analytics repository.AnalyticsRepository, slack repository.SlackRepository) NotifyUsecase {
+// NewNotifyUsecase は分析結果を通知先(Slack / Discord)へ通知するユースケースを生成する
+func NewNotifyUsecase(analytics repository.AnalyticsRepository, notify repository.NotifyRepository) NotifyUsecase {
 	return &notifyImpl{
 		analytics: analytics,
-		slack:     slack,
+		notify:    notify,
 	}
 }
 
@@ -49,7 +49,7 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 	// 各期間を並列に取得する。結果はインデックスで格納し、元の順序を保持する。
 	// errgroup の派生 ctx (gctx) は Wait 後にキャンセルされるため取得処理にのみ使い、
 	// 成功通知には元の ctx を使う。
-	rankings := make([]*repository.Post, len(ranges))
+	rankings := make([]*repository.Message, len(ranges))
 	g, gctx := errgroup.WithContext(ctx)
 	for i, r := range ranges {
 		g.Go(func() error {
@@ -65,15 +65,15 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 		return err
 	}
 
-	posts := make([]*repository.Post, 0, len(ranges)+1)
-	posts = append(posts, &repository.Post{
+	msgs := make([]*repository.Message, 0, len(ranges)+1)
+	msgs = append(msgs, &repository.Message{
 		Fallback: os.Getenv("SUCCESS_FALLBACK"),
 		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
 	})
-	posts = append(posts, rankings...)
+	msgs = append(msgs, rankings...)
 
-	if err := n.slack.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), posts); err != nil {
-		return fmt.Errorf("post to slack: %w", err)
+	if err := n.notify.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), msgs); err != nil {
+		return fmt.Errorf("post notification: %w", err)
 	}
 
 	return nil
@@ -82,10 +82,11 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 func (n *notifyImpl) Error(ctx context.Context, err error) {
 	slog.ErrorContext(ctx, "notify failed", slog.Any("error", err))
 
-	posts := []*repository.Post{
+	msgs := []*repository.Message{
 		{
 			Fallback: os.Getenv("FAILD_FALLBACK"),
-			Pretext:  "<@" + os.Getenv("SLACK_ID") + "> " + os.Getenv("FAILD_FALLBACK"),
+			Mention:  true,
+			Pretext:  os.Getenv("FAILD_FALLBACK"),
 			Title:    err.Error(),
 			Color:    "#EB4646",
 			Footer:   "analytics_notifications_slack",
@@ -97,21 +98,22 @@ func (n *notifyImpl) Error(ctx context.Context, err error) {
 	notifyCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 
-	if postErr := n.slack.Post(notifyCtx, os.Getenv("FAILD_WEBHOOK_URL"), posts); postErr != nil {
-		slog.ErrorContext(ctx, "failed to post error to slack", slog.Any("error", postErr))
+	if postErr := n.notify.Post(notifyCtx, os.Getenv("FAILD_WEBHOOK_URL"), msgs); postErr != nil {
+		slog.ErrorContext(ctx, "failed to post error notification", slog.Any("error", postErr))
 	}
 }
 
-func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Post {
+func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Message {
 	text := []string{}
 	for i, item := range data {
 		if i >= 5 {
 			break
 		}
-		text = append(text, fmt.Sprintf("[%d] <https://%s|%s>: %dpv", i+1, item.Path, item.Title, item.PV))
+		// リンクは中立表現の markdown 形式で保持し、変換は各アダプタに任せる。
+		text = append(text, fmt.Sprintf("[%d] [%s](https://%s): %dpv", i+1, item.Title, item.Path, item.PV))
 	}
 
-	return &repository.Post{
+	return &repository.Message{
 		Title: title,
 		Text:  strings.Join(text, "\n"),
 		Color: color,

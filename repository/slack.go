@@ -7,26 +7,23 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
-
-type SlackRepository interface {
-	Post(ctx context.Context, path string, msg []*Post) error
-}
 
 type slackImpl struct {
 	client *http.Client
 }
 
-// NewSlackRepository は Slack へアクセスするリポジトリを生成する
-func NewSlackRepository() SlackRepository {
+// NewSlackRepository は Slack へ投稿するリポジトリを生成する
+func NewSlackRepository() NotifyRepository {
 	return &slackImpl{
 		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
-type Post struct {
+type attachment struct {
 	Fallback string `json:"fallback"`
 	Pretext  string `json:"pretext"`
 	Title    string `json:"title"`
@@ -35,20 +32,44 @@ type Post struct {
 	Footer   string `json:"footer"`
 }
 
-type payload struct {
-	Attachments []*Post `json:"attachments"`
+type slackPayload struct {
+	Attachments []*attachment `json:"attachments"`
 }
 
-func (a *slackImpl) Post(ctx context.Context, path string, msg []*Post) error {
-	params, err := json.Marshal(payload{
-		Attachments: msg,
+// markdownLink は中立表現のリンク `[title](url)` にマッチする。
+var markdownLink = regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`)
+
+// toMrkdwnLinks は `[title](url)` を Slack mrkdwn 形式 `<url|title>` へ変換する。
+func toMrkdwnLinks(text string) string {
+	return markdownLink.ReplaceAllString(text, "<$2|$1>")
+}
+
+func (a *slackImpl) Post(ctx context.Context, webhookURL string, msgs []*Message) error {
+	attachments := make([]*attachment, 0, len(msgs))
+	for _, msg := range msgs {
+		pretext := msg.Pretext
+		if msg.Mention {
+			pretext = "<@" + mentionID() + "> " + pretext
+		}
+		attachments = append(attachments, &attachment{
+			Fallback: msg.Fallback,
+			Pretext:  pretext,
+			Title:    msg.Title,
+			Text:     toMrkdwnLinks(msg.Text),
+			Color:    msg.Color,
+			Footer:   msg.Footer,
+		})
+	}
+
+	params, err := json.Marshal(slackPayload{
+		Attachments: attachments,
 	})
 	if err != nil {
 		return fmt.Errorf("marshal slack payload: %w", err)
 	}
 
 	body := url.Values{"payload": {string(params)}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, path, strings.NewReader(body.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, strings.NewReader(body.Encode()))
 	if err != nil {
 		return fmt.Errorf("create slack request: %w", err)
 	}
