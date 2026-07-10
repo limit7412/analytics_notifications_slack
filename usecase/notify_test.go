@@ -60,6 +60,22 @@ func TestCreateRankingData(t *testing.T) {
 	}
 }
 
+func TestCreateRankingDataSanitizesLinkParts(t *testing.T) {
+	n := &notifyImpl{}
+	pages := []*repository.Page{
+		{Title: "[Go] <generics|tips>", Path: "h/foo(bar) baz", PV: 1},
+	}
+
+	msg := n.createRankingData("t", "#000", pages)
+
+	// markdown リンクを壊す文字はタイトルでは全角へ、URL ではパーセント
+	// エンコードへ置き換えられる。
+	want := "[1] [[Go] <generics|tips>](https://h/foo%28bar%29%20baz): 1pv"
+	if msg.Text != want {
+		t.Errorf("text = %q, want %q", msg.Text, want)
+	}
+}
+
 func TestCreateRankingDataFewerThanFive(t *testing.T) {
 	n := &notifyImpl{}
 	pages := []*repository.Page{{Title: "a", Path: "h/a", PV: 3}}

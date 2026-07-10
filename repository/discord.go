@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Discord webhook の制約値。
@@ -19,8 +20,14 @@ const (
 	discordMaxEmbeds = 10
 	// content の最大文字数
 	discordMaxContentLen = 2000
+	// embed title の最大文字数
+	discordMaxTitleLen = 256
 	// embed description の最大文字数
 	discordMaxDescriptionLen = 4096
+	// embed footer text の最大文字数
+	discordMaxFooterLen = 2048
+	// 1メッセージ内の全 embed の文字数合計の上限
+	discordMaxTotalLen = 6000
 )
 
 type discordImpl struct {
@@ -72,13 +79,19 @@ func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Messa
 			continue
 		}
 
+		title := truncateRunes(msg.Title, discordMaxTitleLen)
 		var footer *discordFooter
+		footerText := ""
 		if msg.Footer != "" {
-			footer = &discordFooter{Text: msg.Footer}
+			footerText = truncateRunes(msg.Footer, discordMaxFooterLen)
+			footer = &discordFooter{Text: footerText}
 		}
+		// 単体の embed でもメッセージ全体の文字数合計上限に収まるよう、
+		// title / footer を差し引いた分まで description を切り詰める。
+		descLimit := min(discordMaxDescriptionLen, discordMaxTotalLen-runeCount(title)-runeCount(footerText))
 		embeds = append(embeds, &discordEmbed{
-			Title:       msg.Title,
-			Description: truncateRunes(msg.Text, discordMaxDescriptionLen),
+			Title:       title,
+			Description: truncateRunes(msg.Text, descLimit),
 			Color:       hexToColor(msg.Color),
 			Footer:      footer,
 		})
@@ -89,13 +102,30 @@ func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Messa
 		return nil
 	}
 
-	// embeds は1メッセージ最大10件のため、超える場合はチャンクして複数回送信する。
-	// content は先頭のメッセージにのみ載せる。
-	for first := true; first || len(embeds) > 0; first = false {
-		chunk := embeds[:min(len(embeds), discordMaxEmbeds)]
-		embeds = embeds[len(chunk):]
+	// embeds は1メッセージ最大10件・文字数合計最大6000字のため、
+	// 超える場合はチャンクして複数回送信する。content は先頭のメッセージにのみ載せる。
+	chunks := [][]*discordEmbed{}
+	chunk := []*discordEmbed{}
+	chunkLen := 0
+	for _, embed := range embeds {
+		size := embedRuneCount(embed)
+		if len(chunk) > 0 && (len(chunk) >= discordMaxEmbeds || chunkLen+size > discordMaxTotalLen) {
+			chunks = append(chunks, chunk)
+			chunk, chunkLen = nil, 0
+		}
+		chunk = append(chunk, embed)
+		chunkLen += size
+	}
+	if len(chunk) > 0 {
+		chunks = append(chunks, chunk)
+	}
 
-		payload := &discordPayload{Embeds: chunk}
+	for first := true; first || len(chunks) > 0; first = false {
+		payload := &discordPayload{}
+		if len(chunks) > 0 {
+			payload.Embeds = chunks[0]
+			chunks = chunks[1:]
+		}
 		if first {
 			payload.Content = content
 		}
@@ -105,6 +135,15 @@ func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Messa
 	}
 
 	return nil
+}
+
+// embedRuneCount は embed が文字数合計上限に対して占める文字数を返す。
+func embedRuneCount(e *discordEmbed) int {
+	count := runeCount(e.Title) + runeCount(e.Description)
+	if e.Footer != nil {
+		count += runeCount(e.Footer.Text)
+	}
+	return count
 }
 
 func (a *discordImpl) post(ctx context.Context, webhookURL string, payload *discordPayload) error {
@@ -155,4 +194,9 @@ func truncateRunes(s string, limit int) string {
 		count++
 	}
 	return s
+}
+
+// runeCount は文字数(rune 数)を返す。
+func runeCount(s string) int {
+	return utf8.RuneCountInString(s)
 }

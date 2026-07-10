@@ -113,7 +113,7 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 			continue
 		}
 		// リンクは中立表現の markdown 形式で保持し、変換は各アダプタに任せる。
-		text = append(text, fmt.Sprintf("[%d] [%s](https://%s): %dpv", i+1, item.Title, item.Path, item.PV))
+		text = append(text, fmt.Sprintf("[%d] [%s](https://%s): %dpv", i+1, sanitizeLinkTitle(item.Title), sanitizeLinkURL(item.Path), item.PV))
 	}
 
 	return &repository.Message{
@@ -122,3 +122,18 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		Color: color,
 	}
 }
+
+// sanitizeLinkTitle は markdown リンク `[title](url)` や Slack mrkdwn `<url|title>` を
+// 壊す文字を、見た目の近い全角文字へ置き換える。
+var sanitizeLinkTitle = strings.NewReplacer(
+	"[", "[", "]", "]",
+	"<", "<", ">", ">",
+	"|", "|",
+).Replace
+
+// sanitizeLinkURL はリンク URL の解釈を途中で打ち切る文字をパーセントエンコードする。
+var sanitizeLinkURL = strings.NewReplacer(
+	"(", "%28", ")", "%29",
+	"<", "%3C", ">", "%3E",
+	"|", "%7C", " ", "%20",
+).Replace

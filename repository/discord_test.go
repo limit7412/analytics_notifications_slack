@@ -129,6 +129,7 @@ func TestDiscordPostTruncates(t *testing.T) {
 	msgs := []*Message{
 		{Pretext: strings.Repeat("あ", discordMaxContentLen+1)},
 		{Text: strings.Repeat("い", discordMaxDescriptionLen+1)},
+		{Title: strings.Repeat("う", discordMaxTitleLen+1)},
 	}
 
 	repo := NewDiscordRepository()
@@ -141,6 +142,57 @@ func TestDiscordPostTruncates(t *testing.T) {
 	}
 	if got := len([]rune(payloads[0].Embeds[0].Description)); got != discordMaxDescriptionLen {
 		t.Errorf("description length = %d, want %d", got, discordMaxDescriptionLen)
+	}
+	if got := len([]rune(payloads[0].Embeds[1].Title)); got != discordMaxTitleLen {
+		t.Errorf("title length = %d, want %d", got, discordMaxTitleLen)
+	}
+}
+
+func TestDiscordPostFitsSingleEmbedInTotalLimit(t *testing.T) {
+	payloads := []discordPayload{}
+	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
+	defer server.Close()
+
+	// title + footer が大きい場合、単体でも合計上限に収まるよう description が
+	// さらに切り詰められる。
+	msgs := []*Message{{
+		Title:  strings.Repeat("あ", discordMaxTitleLen),
+		Text:   strings.Repeat("い", discordMaxDescriptionLen),
+		Footer: strings.Repeat("う", discordMaxFooterLen),
+	}}
+
+	repo := NewDiscordRepository()
+	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := discordMaxTotalLen - discordMaxTitleLen - discordMaxFooterLen
+	if got := len([]rune(payloads[0].Embeds[0].Description)); got != want {
+		t.Errorf("description length = %d, want %d", got, want)
+	}
+}
+
+func TestDiscordPostChunksByTotalLength(t *testing.T) {
+	payloads := []discordPayload{}
+	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
+	defer server.Close()
+
+	// 1件あたり約2900字 × 3件。10件以下でも合計6000字を超えないよう分割される。
+	msgs := make([]*Message, 0, 3)
+	for i := 0; i < 3; i++ {
+		msgs = append(msgs, &Message{Title: "t", Text: strings.Repeat("あ", 2900)})
+	}
+
+	repo := NewDiscordRepository()
+	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(payloads) != 2 {
+		t.Fatalf("posted %d times, want 2", len(payloads))
+	}
+	if len(payloads[0].Embeds) != 2 || len(payloads[1].Embeds) != 1 {
+		t.Errorf("embeds = %d, %d, want 2, 1", len(payloads[0].Embeds), len(payloads[1].Embeds))
 	}
 }
 
