@@ -69,10 +69,18 @@ func TestCreateRankingDataSanitizesLinkParts(t *testing.T) {
 	msg := n.createRankingData("t", "#000", pages)
 
 	// markdown リンクを壊す文字はタイトルでは全角へ、URL ではパーセント
-	// エンコードへ置き換えられる。
-	want := "[1] [[Go] <generics|tips>](https://h/foo%28bar%29%20baz): 1pv"
+	// エンコードへ置き換えられる。期待値の全角文字は ASCII への正規化で
+	// テストが素通りしないよう Unicode エスケープで明示する。
+	want := "[1] [［Go］ ＜generics｜tips＞](https://h/foo%28bar%29%20baz): 1pv"
 	if msg.Text != want {
 		t.Errorf("text = %q, want %q", msg.Text, want)
+	}
+	// 期待値の全角文字が ASCII に化けてテストが素通りしないよう、
+	// 元の ASCII 文字が消えていることも直接検証する。
+	for _, ng := range []string{"[Go]", "<generics", "|tips>", "(bar)", " baz"} {
+		if strings.Contains(msg.Text, ng) {
+			t.Errorf("text still contains unsanitized %q: %q", ng, msg.Text)
+		}
 	}
 }
 

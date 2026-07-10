@@ -124,11 +124,11 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 }
 
 // sanitizeLinkTitle は markdown リンク `[title](url)` や Slack mrkdwn `<url|title>` を
-// 壊す文字を、見た目の近い全角文字へ置き換える。
+// 壊す文字を、見た目の近い全角文字(U+FF3B/FF3D/FF1C/FF1E/FF5C)へ置き換える。
 var sanitizeLinkTitle = strings.NewReplacer(
-	"[", "[", "]", "]",
-	"<", "<", ">", ">",
-	"|", "|",
+	"[", "［", "]", "］",
+	"<", "＜", ">", "＞",
+	"|", "｜",
 ).Replace
 
 // sanitizeLinkURL はリンク URL の解釈を途中で打ち切る文字をパーセントエンコードする。
