@@ -3,6 +3,8 @@
 
 googleアナリティクスのpvを集計してランキングを作成して投稿するslackbot
 
+`NOTIFY_MODE: discord` を設定するとエラー通知(Alert)も含めてdiscordへ投稿できる
+
 ## deploy
   - 事前にserverlessからawsに接続を確立する
   - serverless-plugin-scripts をインストール
@@ -19,10 +21,14 @@ googleアナリティクスのpvを集計してランキングを作成して投
 ```
   GOOGLE_APPLICATION_CREDENTIALS: secret.json
   PROFILE_ID: <対象にしたいgoogleアナリティクスのプロファイルID>
+  NOTIFY_MODE: <投稿先。slack または discord。未設定時は slack>
   SUCCESS_WEBHOOK_URL: <集計結果を投稿するwebhook>
   SUCCESS_FALLBACK: <投稿時に通知に表示するテキスト>
   FAILD_WEBHOOK_URL: <エラー時に通知をするwebhook>
   FAILD_FALLBACK: <エラーを投稿すつ際に通知に表示するテキスト>
-  SLACK_ID: <エラー時に通知をするslackのユーザーid>
   TITLE_SPLIT: <ここに指定した文字列以降を無視する>
 ```
+
+エラー時は全体通知(slack: `@channel`、discord: `@everyone`)でメンションされる
+
+discordモードの場合は `SUCCESS_WEBHOOK_URL` / `FAILD_WEBHOOK_URL` にdiscordのwebhook URLを設定する

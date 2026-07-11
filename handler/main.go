@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/limit7412/analytics_notifications_slack/repository"
@@ -12,7 +13,7 @@ import (
 // リポジトリは遅延初期化し、Lambda のウォームスタート間でキャッシュ・再利用する
 // ことで、呼び出しごとの接続・認証情報の再確立コストを避ける。
 var (
-	slackRepo     repository.SlackRepository
+	notifyRepo    repository.NotifyRepository
 	analyticsRepo repository.AnalyticsRepository
 )
 
@@ -22,11 +23,20 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+// newNotifyRepository は NOTIFY_MODE(slack | discord、未設定時は slack)に
+// 応じた通知先リポジトリを生成する。
+func newNotifyRepository() repository.NotifyRepository {
+	if os.Getenv("NOTIFY_MODE") == "discord" {
+		return repository.NewDiscordRepository()
+	}
+	return repository.NewSlackRepository()
+}
+
 // Handler は `lambda.Start` から呼び出される Lambda ハンドラー。
 // スケジュール(EventBridge)起動のため、入力ペイロードは受け取らない。
 func Handler(ctx context.Context) (Response, error) {
-	if slackRepo == nil {
-		slackRepo = repository.NewSlackRepository()
+	if notifyRepo == nil {
+		notifyRepo = newNotifyRepository()
 	}
 
 	if analyticsRepo == nil {
@@ -35,14 +45,14 @@ func Handler(ctx context.Context) (Response, error) {
 		repo, err := repository.NewAnalyticsRepository(context.Background())
 		if err != nil {
 			err = fmt.Errorf("init analytics repository: %w", err)
-			// slackRepo は生成済みなので、この経路でも失敗通知を送る。
-			usecase.NewNotifyUsecase(nil, slackRepo).Error(ctx, err)
+			// notifyRepo は生成済みなので、この経路でも失敗通知を送る。
+			usecase.NewNotifyUsecase(nil, notifyRepo).Error(ctx, err)
 			return Response{}, err
 		}
 		analyticsRepo = repo
 	}
 
-	app := usecase.NewNotifyUsecase(analyticsRepo, slackRepo)
+	app := usecase.NewNotifyUsecase(analyticsRepo, notifyRepo)
 	if err := app.Run(ctx); err != nil {
 		app.Error(ctx, err)
 		return Response{}, err
