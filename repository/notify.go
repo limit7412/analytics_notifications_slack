@@ -1,9 +1,6 @@
 package repository
 
-import (
-	"context"
-	"os"
-)
+import "context"
 
 // NotifyRepository は通知メッセージを webhook へ投稿するリポジトリの
 // 共通インターフェース。Slack / Discord をアダプタとして差し替えられる。
@@ -16,8 +13,8 @@ type NotifyRepository interface {
 // 必要な変換は各アダプタが行う。
 type Message struct {
 	Fallback string
-	// Mention が true の場合、アダプタが投稿先の形式でメンションを付与する。
-	// メンション先の ID は MENTION_ID(未設定時は SLACK_ID)から解決する。
+	// Mention が true の場合、アダプタが投稿先の形式で全体通知
+	// (Slack: <!channel>、Discord: @everyone)を付与する。
 	Mention bool
 	Pretext string
 	Title   string
@@ -25,14 +22,4 @@ type Message struct {
 	// Color は `#4286f4` 形式の hex 文字列。
 	Color  string
 	Footer string
-}
-
-// mentionID はメンション先のユーザー ID を返す。
-// Slack と Discord で ID 体系が異なるため MENTION_ID に一般化しつつ、
-// 後方互換として未設定時は SLACK_ID にフォールバックする。
-func mentionID() string {
-	if id := os.Getenv("MENTION_ID"); id != "" {
-		return id
-	}
-	return os.Getenv("SLACK_ID")
 }

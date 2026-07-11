@@ -67,9 +67,8 @@ func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Messa
 		if msg == nil {
 			continue
 		}
-		// ID 未設定時は壊れたメンション `<@>` を出力しない。
-		if id := mentionID(); msg.Mention && !mentioned && id != "" {
-			contentParts = append(contentParts, "<@"+id+">")
+		if msg.Mention && !mentioned {
+			contentParts = append(contentParts, "@everyone")
 			mentioned = true
 		}
 		if msg.Pretext != "" {

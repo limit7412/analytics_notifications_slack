@@ -10,9 +10,6 @@ import (
 )
 
 func TestSlackPost(t *testing.T) {
-	t.Setenv("MENTION_ID", "")
-	t.Setenv("SLACK_ID", "U123")
-
 	payloads := []slackPayload{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
@@ -58,9 +55,9 @@ func TestSlackPost(t *testing.T) {
 	if attachments[1].Color != "#4286f4" {
 		t.Errorf("color = %q", attachments[1].Color)
 	}
-	// Mention フラグは pretext のメンションへ変換される(MENTION_ID 未設定時は SLACK_ID)。
-	if attachments[2].Pretext != "<@U123> failed" {
-		t.Errorf("pretext = %q, want %q", attachments[2].Pretext, "<@U123> failed")
+	// Mention フラグは pretext の全体通知へ変換される。
+	if attachments[2].Pretext != "<!channel> failed" {
+		t.Errorf("pretext = %q, want %q", attachments[2].Pretext, "<!channel> failed")
 	}
 	if attachments[2].Footer != "footer" {
 		t.Errorf("footer = %q", attachments[2].Footer)

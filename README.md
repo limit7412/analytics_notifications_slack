@@ -26,9 +26,9 @@ googleアナリティクスのpvを集計してランキングを作成して投
   SUCCESS_FALLBACK: <投稿時に通知に表示するテキスト>
   FAILD_WEBHOOK_URL: <エラー時に通知をするwebhook>
   FAILD_FALLBACK: <エラーを投稿すつ際に通知に表示するテキスト>
-  MENTION_ID: <エラー時に通知(メンション)をするユーザーid。未設定時は SLACK_ID にフォールバック>
-  SLACK_ID: <エラー時に通知をするslackのユーザーid(後方互換用。MENTION_ID を推奨)>
   TITLE_SPLIT: <ここに指定した文字列以降を無視する>
 ```
 
-discordモードの場合は `SUCCESS_WEBHOOK_URL` / `FAILD_WEBHOOK_URL` にdiscordのwebhook URLを、`MENTION_ID` にdiscordのユーザーidを設定する
+エラー時は全体通知(slack: `@channel`、discord: `@everyone`)でメンションされる
+
+discordモードの場合は `SUCCESS_WEBHOOK_URL` / `FAILD_WEBHOOK_URL` にdiscordのwebhook URLを設定する

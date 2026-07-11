@@ -51,9 +51,8 @@ func (a *slackImpl) Post(ctx context.Context, webhookURL string, msgs []*Message
 			continue
 		}
 		pretext := msg.Pretext
-		// ID 未設定時は壊れたメンション `<@>` を出力しない。
-		if id := mentionID(); msg.Mention && id != "" {
-			pretext = "<@" + id + "> " + pretext
+		if msg.Mention {
+			pretext = "<!channel> " + pretext
 		}
 		attachments = append(attachments, &attachment{
 			Fallback: msg.Fallback,

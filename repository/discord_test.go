@@ -31,8 +31,6 @@ func newDiscordTestServer(t *testing.T, status int, payloads *[]discordPayload) 
 }
 
 func TestDiscordPost(t *testing.T) {
-	t.Setenv("MENTION_ID", "D123")
-
 	payloads := []discordPayload{}
 	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
 	defer server.Close()
@@ -52,8 +50,8 @@ func TestDiscordPost(t *testing.T) {
 	}
 	p := payloads[0]
 
-	// pretext とメンションは content にまとめられる。
-	if want := "ok <@D123> failed"; p.Content != want {
+	// pretext と全体通知は content にまとめられる。
+	if want := "ok @everyone failed"; p.Content != want {
 		t.Errorf("content = %q, want %q", p.Content, want)
 	}
 	// pretext のみのメッセージは embed にならない。
@@ -72,23 +70,6 @@ func TestDiscordPost(t *testing.T) {
 	}
 	if p.Embeds[1].Footer == nil || p.Embeds[1].Footer.Text != "footer" {
 		t.Errorf("footer = %+v", p.Embeds[1].Footer)
-	}
-}
-
-func TestDiscordPostMentionFallsBackToSlackID(t *testing.T) {
-	t.Setenv("MENTION_ID", "")
-	t.Setenv("SLACK_ID", "U123")
-
-	payloads := []discordPayload{}
-	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
-	defer server.Close()
-
-	repo := NewDiscordRepository()
-	if err := repo.Post(context.Background(), server.URL, []*Message{{Mention: true, Title: "t"}}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if payloads[0].Content != "<@U123>" {
-		t.Errorf("content = %q, want %q", payloads[0].Content, "<@U123>")
 	}
 }
 
