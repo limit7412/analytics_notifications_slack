@@ -5,6 +5,11 @@ on: pull_request
 jobs:
   deploy:
     name: deploy
+    # Dependabot が作成した PR では、リポジトリの Secrets も OIDC の id-token も
+    # ワークフローに渡らない。
+    # そのため AWS の認証情報を取得できず、dev デプロイは必ず失敗する。
+    # 依存更新の検証は test ワークフローが担うので、ここではジョブごとスキップする。
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04-arm
     permissions:
       id-token: write # OIDC トークンの発行に必要
