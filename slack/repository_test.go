@@ -1,4 +1,4 @@
-package repository
+package slack
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/limit7412/analytics_notifications_slack/notify"
 )
 
 func TestSlackPost(t *testing.T) {
@@ -27,7 +29,7 @@ func TestSlackPost(t *testing.T) {
 	defer server.Close()
 
 	repo := NewSlackRepository()
-	msgs := []*Message{
+	msgs := []*notify.Message{
 		{Fallback: "ok", Pretext: "ok"},
 		{Title: "ランキング", Text: "[1] [a](https://h/a): 3pv\n[2] [b](https://h/b): 1pv", Color: "#4286f4"},
 		{Mention: true, Pretext: "failed", Title: "boom", Color: "#EB4646", Footer: "footer"},
@@ -71,7 +73,7 @@ func TestSlackPostErrorStatus(t *testing.T) {
 	defer server.Close()
 
 	repo := NewSlackRepository()
-	err := repo.Post(context.Background(), server.URL, []*Message{{Title: "t"}})
+	err := repo.Post(context.Background(), server.URL, []*notify.Message{{Title: "t"}})
 	if err == nil || !strings.Contains(err.Error(), "400") {
 		t.Fatalf("error = %v, want status 400 error", err)
 	}

@@ -1,4 +1,4 @@
-package repository
+package discord
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/limit7412/analytics_notifications_slack/notify"
 )
 
 // Discord webhook の制約値。
@@ -35,7 +37,7 @@ type discordImpl struct {
 }
 
 // NewDiscordRepository は Discord へ投稿するリポジトリを生成する
-func NewDiscordRepository() NotifyRepository {
+func NewDiscordRepository() notify.NotifyRepository {
 	return &discordImpl{
 		client: &http.Client{Timeout: 10 * time.Second},
 	}
@@ -57,7 +59,7 @@ type discordPayload struct {
 	Embeds  []*discordEmbed `json:"embeds,omitempty"`
 }
 
-func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Message) error {
+func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
 	// メンションは embed 内では機能しないため content に出力する。
 	// pretext 相当のテキストも embed には対応する場所がないので content にまとめる。
 	contentParts := []string{}

@@ -6,15 +6,17 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/limit7412/analytics_notifications_slack/repository"
-	"github.com/limit7412/analytics_notifications_slack/usecase"
+	"github.com/limit7412/analytics_notifications_slack/analytics"
+	"github.com/limit7412/analytics_notifications_slack/discord"
+	"github.com/limit7412/analytics_notifications_slack/notify"
+	"github.com/limit7412/analytics_notifications_slack/slack"
 )
 
 // リポジトリは遅延初期化し、Lambda のウォームスタート間でキャッシュ・再利用する
 // ことで、呼び出しごとの接続・認証情報の再確立コストを避ける。
 var (
-	notifyRepo    repository.NotifyRepository
-	analyticsRepo repository.AnalyticsRepository
+	notifyRepo    notify.NotifyRepository
+	analyticsRepo analytics.AnalyticsRepository
 )
 
 // Response はハンドラーの実行結果を表す。
@@ -25,11 +27,11 @@ type Response struct {
 
 // newNotifyRepository は NOTIFY_MODE(slack | discord、未設定時は slack)に
 // 応じた通知先リポジトリを生成する。
-func newNotifyRepository() repository.NotifyRepository {
+func newNotifyRepository() notify.NotifyRepository {
 	if os.Getenv("NOTIFY_MODE") == "discord" {
-		return repository.NewDiscordRepository()
+		return discord.NewDiscordRepository()
 	}
-	return repository.NewSlackRepository()
+	return slack.NewSlackRepository()
 }
 
 // Handler は `lambda.Start` から呼び出される Lambda ハンドラー。
@@ -42,17 +44,17 @@ func Handler(ctx context.Context) (Response, error) {
 	if analyticsRepo == nil {
 		// キャッシュするサービスを単一呼び出しの(キャンセルされうる)コンテキストに
 		// 紐付けないよう、background コンテキストで生成する。
-		repo, err := repository.NewAnalyticsRepository(context.Background())
+		repo, err := analytics.NewAnalyticsRepository(context.Background())
 		if err != nil {
 			err = fmt.Errorf("init analytics repository: %w", err)
 			// notifyRepo は生成済みなので、この経路でも失敗通知を送る。
-			usecase.NewNotifyUsecase(nil, notifyRepo).Error(ctx, err)
+			notify.NewNotifyUsecase(nil, notifyRepo).Error(ctx, err)
 			return Response{}, err
 		}
 		analyticsRepo = repo
 	}
 
-	app := usecase.NewNotifyUsecase(analyticsRepo, notifyRepo)
+	app := notify.NewNotifyUsecase(analyticsRepo, notifyRepo)
 	if err := app.Run(ctx); err != nil {
 		app.Error(ctx, err)
 		return Response{}, err

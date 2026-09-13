@@ -1,4 +1,4 @@
-package usecase
+package notify
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/limit7412/analytics_notifications_slack/repository"
+	"github.com/limit7412/analytics_notifications_slack/analytics"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,12 +18,12 @@ type NotifyUsecase interface {
 }
 
 type notifyImpl struct {
-	analytics repository.AnalyticsRepository
-	notify    repository.NotifyRepository
+	analytics analytics.AnalyticsRepository
+	notify    NotifyRepository
 }
 
 // NewNotifyUsecase は分析結果を通知先(Slack / Discord)へ通知するユースケースを生成する
-func NewNotifyUsecase(analytics repository.AnalyticsRepository, notify repository.NotifyRepository) NotifyUsecase {
+func NewNotifyUsecase(analytics analytics.AnalyticsRepository, notify NotifyRepository) NotifyUsecase {
 	return &notifyImpl{
 		analytics: analytics,
 		notify:    notify,
@@ -49,7 +49,7 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 	// 各期間を並列に取得する。結果はインデックスで格納し、元の順序を保持する。
 	// errgroup の派生 ctx (gctx) は Wait 後にキャンセルされるため取得処理にのみ使い、
 	// 成功通知には元の ctx を使う。
-	rankings := make([]*repository.Message, len(ranges))
+	rankings := make([]*Message, len(ranges))
 	g, gctx := errgroup.WithContext(ctx)
 	for i, r := range ranges {
 		g.Go(func() error {
@@ -65,8 +65,8 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 		return err
 	}
 
-	msgs := make([]*repository.Message, 0, len(ranges)+1)
-	msgs = append(msgs, &repository.Message{
+	msgs := make([]*Message, 0, len(ranges)+1)
+	msgs = append(msgs, &Message{
 		Fallback: os.Getenv("SUCCESS_FALLBACK"),
 		Pretext:  os.Getenv("SUCCESS_FALLBACK"),
 	})
@@ -82,7 +82,7 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 func (n *notifyImpl) Error(ctx context.Context, err error) {
 	slog.ErrorContext(ctx, "notify failed", slog.Any("error", err))
 
-	msgs := []*repository.Message{
+	msgs := []*Message{
 		{
 			Fallback: os.Getenv("FAILD_FALLBACK"),
 			Mention:  true,
@@ -103,7 +103,7 @@ func (n *notifyImpl) Error(ctx context.Context, err error) {
 	}
 }
 
-func (n *notifyImpl) createRankingData(title string, color string, data []*repository.Page) *repository.Message {
+func (n *notifyImpl) createRankingData(title string, color string, data []*analytics.Page) *Message {
 	text := []string{}
 	for i, item := range data {
 		if i >= 5 {
@@ -116,7 +116,7 @@ func (n *notifyImpl) createRankingData(title string, color string, data []*repos
 		text = append(text, fmt.Sprintf("[%d] [%s](https://%s): %dpv", i+1, sanitizeLinkTitle(item.Title), sanitizeLinkURL(item.Path), item.PV))
 	}
 
-	return &repository.Message{
+	return &Message{
 		Title: title,
 		Text:  strings.Join(text, "\n"),
 		Color: color,

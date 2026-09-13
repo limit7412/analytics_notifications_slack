@@ -1,4 +1,4 @@
-package repository
+package analytics
 
 import (
 	"cmp"

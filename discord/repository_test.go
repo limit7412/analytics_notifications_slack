@@ -1,4 +1,4 @@
-package repository
+package discord
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/limit7412/analytics_notifications_slack/notify"
 )
 
 // newDiscordTestServer は受信した JSON ペイロードを記録するテストサーバーを返す。
@@ -36,7 +38,7 @@ func TestDiscordPost(t *testing.T) {
 	defer server.Close()
 
 	repo := NewDiscordRepository()
-	msgs := []*Message{
+	msgs := []*notify.Message{
 		{Fallback: "ok", Pretext: "ok"},
 		{Title: "ランキング", Text: "[1] [a](https://h/a): 3pv", Color: "#4286f4"},
 		{Mention: true, Pretext: "failed", Title: "boom", Color: "#EB4646", Footer: "footer"},
@@ -78,10 +80,10 @@ func TestDiscordPostChunksEmbeds(t *testing.T) {
 	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
 	defer server.Close()
 
-	msgs := make([]*Message, 0, 11)
-	msgs = append(msgs, &Message{Pretext: "head"})
+	msgs := make([]*notify.Message, 0, 11)
+	msgs = append(msgs, &notify.Message{Pretext: "head"})
 	for i := 0; i < 11; i++ {
-		msgs = append(msgs, &Message{Title: "t"})
+		msgs = append(msgs, &notify.Message{Title: "t"})
 	}
 
 	repo := NewDiscordRepository()
@@ -107,7 +109,7 @@ func TestDiscordPostTruncates(t *testing.T) {
 	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
 	defer server.Close()
 
-	msgs := []*Message{
+	msgs := []*notify.Message{
 		{Pretext: strings.Repeat("あ", discordMaxContentLen+1)},
 		{Text: strings.Repeat("い", discordMaxDescriptionLen+1)},
 		{Title: strings.Repeat("う", discordMaxTitleLen+1)},
@@ -136,7 +138,7 @@ func TestDiscordPostFitsSingleEmbedInTotalLimit(t *testing.T) {
 
 	// title + footer が大きい場合、単体でも合計上限に収まるよう description が
 	// さらに切り詰められる。
-	msgs := []*Message{{
+	msgs := []*notify.Message{{
 		Title:  strings.Repeat("あ", discordMaxTitleLen),
 		Text:   strings.Repeat("い", discordMaxDescriptionLen),
 		Footer: strings.Repeat("う", discordMaxFooterLen),
@@ -159,9 +161,9 @@ func TestDiscordPostChunksByTotalLength(t *testing.T) {
 	defer server.Close()
 
 	// 1件あたり約2900字 × 3件。10件以下でも合計6000字を超えないよう分割される。
-	msgs := make([]*Message, 0, 3)
+	msgs := make([]*notify.Message, 0, 3)
 	for i := 0; i < 3; i++ {
-		msgs = append(msgs, &Message{Title: "t", Text: strings.Repeat("あ", 2900)})
+		msgs = append(msgs, &notify.Message{Title: "t", Text: strings.Repeat("あ", 2900)})
 	}
 
 	repo := NewDiscordRepository()
@@ -183,7 +185,7 @@ func TestDiscordPostEmptyMessages(t *testing.T) {
 	defer server.Close()
 
 	repo := NewDiscordRepository()
-	if err := repo.Post(context.Background(), server.URL, []*Message{{}}); err != nil {
+	if err := repo.Post(context.Background(), server.URL, []*notify.Message{{}}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// 空ペイロードは Discord がエラーを返すため送信しない。
@@ -198,7 +200,7 @@ func TestDiscordPostErrorStatus(t *testing.T) {
 	defer server.Close()
 
 	repo := NewDiscordRepository()
-	err := repo.Post(context.Background(), server.URL, []*Message{{Title: "t"}})
+	err := repo.Post(context.Background(), server.URL, []*notify.Message{{Title: "t"}})
 	if err == nil || !strings.Contains(err.Error(), "429") {
 		t.Fatalf("error = %v, want status 429 error", err)
 	}
