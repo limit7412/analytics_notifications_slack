@@ -148,34 +148,3 @@ func TestRunAnalyticsError(t *testing.T) {
 		t.Errorf("poster should not be posted on analytics failure")
 	}
 }
-
-func TestError(t *testing.T) {
-	t.Setenv("FAILD_WEBHOOK_URL", "https://hooks.example/fail")
-	t.Setenv("FAILD_FALLBACK", "failed")
-
-	poster := &fakeNotify{}
-	n := NewUsecase(&fakeAnalytics{}, poster)
-
-	// 既にキャンセル済みのコンテキストでも通知は送られなければならない。
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	n.Error(ctx, errors.New("something broke"))
-
-	if len(poster.posts) != 1 {
-		t.Fatalf("poster posted %d times, want 1", len(poster.posts))
-	}
-	if poster.paths[0] != "https://hooks.example/fail" {
-		t.Errorf("posted to %q", poster.paths[0])
-	}
-	msg := poster.posts[0][0]
-	if msg.Title != "something broke" {
-		t.Errorf("title = %q", msg.Title)
-	}
-	// メンションの形式変換はアダプタに任せるため、usecase はフラグのみ立てる。
-	if !msg.Mention {
-		t.Errorf("mention flag should be set")
-	}
-	if msg.Pretext != "failed" {
-		t.Errorf("pretext = %q, want %q", msg.Pretext, "failed")
-	}
-}

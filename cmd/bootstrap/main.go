@@ -6,13 +6,14 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/limit7412/analytics_notifications_slack/alert"
 	"github.com/limit7412/analytics_notifications_slack/analytics"
 	"github.com/limit7412/analytics_notifications_slack/discord"
 	"github.com/limit7412/analytics_notifications_slack/notify"
 	"github.com/limit7412/analytics_notifications_slack/slack"
 )
 
-// リポジトリは遅延初期化し、Lambda のウォームスタート間でキャッシュ・再利用する
+// 依存は遅延初期化し、Lambda のウォームスタート間でキャッシュ・再利用する
 // ことで、呼び出しごとの接続・認証情報の再確立コストを避ける。
 var (
 	poster        notify.Poster
@@ -40,6 +41,8 @@ func Handler(ctx context.Context) (Response, error) {
 	if poster == nil {
 		poster = newPoster()
 	}
+	// 失敗通知は集計に依存しないため、analytics の初期化より先に用意する。
+	alerter := alert.NewUsecase(poster)
 
 	if analyticsRepo == nil {
 		// キャッシュするサービスを単一呼び出しの(キャンセルされうる)コンテキストに
@@ -47,8 +50,7 @@ func Handler(ctx context.Context) (Response, error) {
 		repo, err := analytics.NewRepository(context.Background())
 		if err != nil {
 			err = fmt.Errorf("init analytics repository: %w", err)
-			// poster は生成済みなので、この経路でも失敗通知を送る。
-			notify.NewUsecase(nil, poster).Error(ctx, err)
+			alerter.Notify(ctx, err)
 			return Response{}, err
 		}
 		analyticsRepo = repo
@@ -56,7 +58,7 @@ func Handler(ctx context.Context) (Response, error) {
 
 	app := notify.NewUsecase(analyticsRepo, poster)
 	if err := app.Run(ctx); err != nil {
-		app.Error(ctx, err)
+		alerter.Notify(ctx, err)
 		return Response{}, err
 	}
 
