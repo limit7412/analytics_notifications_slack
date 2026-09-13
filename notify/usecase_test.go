@@ -39,7 +39,7 @@ func (f *fakeNotify) Post(ctx context.Context, webhookURL string, msgs []*Messag
 }
 
 func TestCreateRankingData(t *testing.T) {
-	n := &notifyImpl{}
+	n := &usecaseImpl{}
 	pages := make([]*analytics.Page, 0, 7)
 	for i := 0; i < 7; i++ {
 		pages = append(pages, &analytics.Page{Title: "t", Path: "h/p", PV: i})
@@ -61,7 +61,7 @@ func TestCreateRankingData(t *testing.T) {
 }
 
 func TestCreateRankingDataSanitizesLinkParts(t *testing.T) {
-	n := &notifyImpl{}
+	n := &usecaseImpl{}
 	pages := []*analytics.Page{
 		{Title: "[Go] <generics|tips>", Path: "h/foo(bar) baz", PV: 1},
 	}
@@ -85,7 +85,7 @@ func TestCreateRankingDataSanitizesLinkParts(t *testing.T) {
 }
 
 func TestCreateRankingDataFewerThanFive(t *testing.T) {
-	n := &notifyImpl{}
+	n := &usecaseImpl{}
 	pages := []*analytics.Page{{Title: "a", Path: "h/a", PV: 3}}
 
 	msg := n.createRankingData("t", "#000", pages)
@@ -101,7 +101,7 @@ func TestRunSuccess(t *testing.T) {
 
 	ga := &fakeAnalytics{pages: []*analytics.Page{{Title: "a", Path: "h/a", PV: 1}}}
 	poster := &fakeNotify{}
-	n := NewNotifyUsecase(ga, poster)
+	n := NewUsecase(ga, poster)
 
 	if err := n.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -138,7 +138,7 @@ func TestRunAnalyticsError(t *testing.T) {
 	wantErr := errors.New("boom")
 	ga := &fakeAnalytics{err: wantErr}
 	poster := &fakeNotify{}
-	n := NewNotifyUsecase(ga, poster)
+	n := NewUsecase(ga, poster)
 
 	err := n.Run(context.Background())
 	if !errors.Is(err, wantErr) {
@@ -154,7 +154,7 @@ func TestError(t *testing.T) {
 	t.Setenv("FAILD_FALLBACK", "failed")
 
 	poster := &fakeNotify{}
-	n := NewNotifyUsecase(&fakeAnalytics{}, poster)
+	n := NewUsecase(&fakeAnalytics{}, poster)
 
 	// 既にキャンセル済みのコンテキストでも通知は送られなければならない。
 	ctx, cancel := context.WithCancel(context.Background())

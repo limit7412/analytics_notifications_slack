@@ -3,17 +3,17 @@ package analytics
 import (
 	"testing"
 
-	analytics "google.golang.org/api/analyticsdata/v1beta"
+	analyticsdata "google.golang.org/api/analyticsdata/v1beta"
 )
 
-func row(title, host, path, pv string) *analytics.Row {
-	return &analytics.Row{
-		DimensionValues: []*analytics.DimensionValue{
+func row(title, host, path, pv string) *analyticsdata.Row {
+	return &analyticsdata.Row{
+		DimensionValues: []*analyticsdata.DimensionValue{
 			{Value: title},
 			{Value: host},
 			{Value: path},
 		},
-		MetricValues: []*analytics.MetricValue{
+		MetricValues: []*analyticsdata.MetricValue{
 			{Value: pv},
 		},
 	}
@@ -22,7 +22,7 @@ func row(title, host, path, pv string) *analytics.Row {
 func TestAggregateRows(t *testing.T) {
 	tests := []struct {
 		name       string
-		rows       []*analytics.Row
+		rows       []*analyticsdata.Row
 		titleSplit string
 		want       map[string]int // タイトル -> PV
 		wantPath   map[string]string
@@ -30,7 +30,7 @@ func TestAggregateRows(t *testing.T) {
 	}{
 		{
 			name: "sums PV for duplicate titles",
-			rows: []*analytics.Row{
+			rows: []*analyticsdata.Row{
 				row("記事A | サイト", "example.com", "/blog/a", "10"),
 				row("記事A | サイト", "example.com", "/blog/a", "5"),
 			},
@@ -40,7 +40,7 @@ func TestAggregateRows(t *testing.T) {
 		},
 		{
 			name: "skips top-level path",
-			rows: []*analytics.Row{
+			rows: []*analyticsdata.Row{
 				row("トップ", "example.com", "/", "100"),
 				row("記事B", "example.com", "/blog/b", "3"),
 			},
@@ -49,7 +49,7 @@ func TestAggregateRows(t *testing.T) {
 		},
 		{
 			name: "splits title on separator",
-			rows: []*analytics.Row{
+			rows: []*analyticsdata.Row{
 				row("見出し - サイト名", "example.com", "/blog/c", "7"),
 			},
 			titleSplit: " - ",
@@ -57,27 +57,27 @@ func TestAggregateRows(t *testing.T) {
 		},
 		{
 			name:       "non-numeric PV is an error",
-			rows:       []*analytics.Row{row("記事C", "example.com", "/blog/d", "abc")},
+			rows:       []*analyticsdata.Row{row("記事C", "example.com", "/blog/d", "abc")},
 			titleSplit: " | ",
 			wantErr:    true,
 		},
 		{
 			name:       "empty titleSplit keeps the full title without panicking",
-			rows:       []*analytics.Row{row("記事D", "example.com", "/blog/e", "4")},
+			rows:       []*analyticsdata.Row{row("記事D", "example.com", "/blog/e", "4")},
 			titleSplit: "",
 			want:       map[string]int{"記事D": 4},
 		},
 		{
 			name:       "empty title with empty titleSplit does not panic",
-			rows:       []*analytics.Row{row("", "example.com", "/blog/f", "2")},
+			rows:       []*analyticsdata.Row{row("", "example.com", "/blog/f", "2")},
 			titleSplit: "",
 			want:       map[string]int{"": 2},
 		},
 		{
 			name: "skips malformed rows",
-			rows: []*analytics.Row{
+			rows: []*analyticsdata.Row{
 				nil,
-				{DimensionValues: []*analytics.DimensionValue{{Value: "x"}}}, // ディメンション不足
+				{DimensionValues: []*analyticsdata.DimensionValue{{Value: "x"}}}, // ディメンション不足
 				row("記事E", "example.com", "/blog/g", "9"),
 			},
 			titleSplit: " | ",

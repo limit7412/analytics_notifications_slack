@@ -12,25 +12,25 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type NotifyUsecase interface {
+type Usecase interface {
 	Run(ctx context.Context) error
 	Error(ctx context.Context, err error)
 }
 
-type notifyImpl struct {
-	analytics analytics.AnalyticsRepository
-	notify    NotifyRepository
+type usecaseImpl struct {
+	analytics analytics.Repository
+	poster    Poster
 }
 
-// NewNotifyUsecase は分析結果を通知先(Slack / Discord)へ通知するユースケースを生成する
-func NewNotifyUsecase(analytics analytics.AnalyticsRepository, notify NotifyRepository) NotifyUsecase {
-	return &notifyImpl{
+// NewUsecase は分析結果を通知先(Slack / Discord)へ通知するユースケースを生成する
+func NewUsecase(analytics analytics.Repository, poster Poster) Usecase {
+	return &usecaseImpl{
 		analytics: analytics,
-		notify:    notify,
+		poster:    poster,
 	}
 }
 
-func (n *notifyImpl) Run(ctx context.Context) error {
+func (n *usecaseImpl) Run(ctx context.Context) error {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	month := now.AddDate(0, 0, -(now.Day() - 1)).Format("2006-01-02")
@@ -72,14 +72,14 @@ func (n *notifyImpl) Run(ctx context.Context) error {
 	})
 	msgs = append(msgs, rankings...)
 
-	if err := n.notify.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), msgs); err != nil {
+	if err := n.poster.Post(ctx, os.Getenv("SUCCESS_WEBHOOK_URL"), msgs); err != nil {
 		return fmt.Errorf("post notification: %w", err)
 	}
 
 	return nil
 }
 
-func (n *notifyImpl) Error(ctx context.Context, err error) {
+func (n *usecaseImpl) Error(ctx context.Context, err error) {
 	slog.ErrorContext(ctx, "notify failed", slog.Any("error", err))
 
 	msgs := []*Message{
@@ -98,12 +98,12 @@ func (n *notifyImpl) Error(ctx context.Context, err error) {
 	notifyCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 
-	if postErr := n.notify.Post(notifyCtx, os.Getenv("FAILD_WEBHOOK_URL"), msgs); postErr != nil {
+	if postErr := n.poster.Post(notifyCtx, os.Getenv("FAILD_WEBHOOK_URL"), msgs); postErr != nil {
 		slog.ErrorContext(ctx, "failed to post error notification", slog.Any("error", postErr))
 	}
 }
 
-func (n *notifyImpl) createRankingData(title string, color string, data []*analytics.Page) *Message {
+func (n *usecaseImpl) createRankingData(title string, color string, data []*analytics.Page) *Message {
 	text := []string{}
 	for i, item := range data {
 		if i >= 5 {

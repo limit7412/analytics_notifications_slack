@@ -10,26 +10,26 @@ import (
 	"strconv"
 	"strings"
 
-	analytics "google.golang.org/api/analyticsdata/v1beta"
+	analyticsdata "google.golang.org/api/analyticsdata/v1beta"
 	"google.golang.org/api/option"
 )
 
-type AnalyticsRepository interface {
+type Repository interface {
 	GetSessions(ctx context.Context, start string, end string) ([]*Page, error)
 }
 
-type analyticsImpl struct {
-	service *analytics.Service
+type repositoryImpl struct {
+	service *analyticsdata.Service
 }
 
-// NewAnalyticsRepository は Google アナリティクスへアクセスするリポジトリを生成する
-func NewAnalyticsRepository(ctx context.Context) (AnalyticsRepository, error) {
-	service, err := analytics.NewService(ctx, option.WithCredentialsFile("./secret.json"))
+// NewRepository は Google アナリティクスへアクセスするリポジトリを生成する
+func NewRepository(ctx context.Context) (Repository, error) {
+	service, err := analyticsdata.NewService(ctx, option.WithCredentialsFile("./secret.json"))
 	if err != nil {
 		return nil, fmt.Errorf("create analytics service: %w", err)
 	}
 
-	return &analyticsImpl{service: service}, nil
+	return &repositoryImpl{service: service}, nil
 }
 
 type Page struct {
@@ -38,17 +38,17 @@ type Page struct {
 	PV    int
 }
 
-func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end string) ([]*Page, error) {
-	runReportRequest := &analytics.RunReportRequest{
-		DateRanges: []*analytics.DateRange{
+func (a *repositoryImpl) GetSessions(ctx context.Context, start string, end string) ([]*Page, error) {
+	runReportRequest := &analyticsdata.RunReportRequest{
+		DateRanges: []*analyticsdata.DateRange{
 			{StartDate: start, EndDate: end},
 		},
-		Dimensions: []*analytics.Dimension{
+		Dimensions: []*analyticsdata.Dimension{
 			{Name: "pageTitle"},
 			{Name: "hostName"},
 			{Name: "pagePath"},
 		},
-		Metrics: []*analytics.Metric{
+		Metrics: []*analyticsdata.Metric{
 			{Name: "screenPageViews"},
 		},
 	}
@@ -85,7 +85,7 @@ func (a *analyticsImpl) GetSessions(ctx context.Context, start string, end strin
 // aggregateRows はレポートの行を pageMap に集約し、同一タイトルの PV を合算する。
 // トップレベルのパス(スラッシュ1つ)はスキップする。想定するディメンション/
 // メトリクスを欠く行は、panic を避けるため防御的にスキップする。
-func aggregateRows(pageMap map[string]*Page, rows []*analytics.Row, titleSplit string) error {
+func aggregateRows(pageMap map[string]*Page, rows []*analyticsdata.Row, titleSplit string) error {
 	for _, row := range rows {
 		if row == nil || len(row.DimensionValues) < 3 || len(row.MetricValues) < 1 {
 			continue
