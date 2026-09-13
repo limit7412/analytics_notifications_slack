@@ -20,7 +20,7 @@ googleアナリティクスのpvを集計してランキングを作成して投
 ### env.yml
 ```
   GOOGLE_APPLICATION_CREDENTIALS: secret.json
-  PROFILE_ID: <対象にしたいgoogleアナリティクスのプロファイルID>
+  PROPERTY_ID: <対象にしたいGA4のプロパティID。カンマ区切りで複数指定可>
   NOTIFY_MODE: <投稿先。slack または discord。未設定時は slack>
   SUCCESS_WEBHOOK_URL: <集計結果を投稿するwebhook>
   SUCCESS_FALLBACK: <投稿時に通知に表示するテキスト>
