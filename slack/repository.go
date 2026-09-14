@@ -4,24 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
-	"time"
 
 	"github.com/limit7412/analytics_notifications_slack/notify"
+	"github.com/limit7412/analytics_notifications_slack/webhook"
 )
 
 type repositoryImpl struct {
-	client *http.Client
+	webhook *webhook.Client
 }
 
 // NewRepository は Slack へ投稿するリポジトリを生成する
 func NewRepository() notify.Poster {
 	return &repositoryImpl{
-		client: &http.Client{Timeout: 10 * time.Second},
+		webhook: webhook.New("slack"),
 	}
 }
 
@@ -73,24 +70,8 @@ func (a *repositoryImpl) Post(ctx context.Context, webhookURL string, msgs []*no
 		return fmt.Errorf("marshal slack payload: %w", err)
 	}
 
+	// Slack の Incoming Webhook には payload パラメータに JSON を入れた
+	// フォーム形式で送る。
 	body := url.Values{"payload": {string(params)}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, strings.NewReader(body.Encode()))
-	if err != nil {
-		return fmt.Errorf("create slack request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	res, err := a.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("post to slack: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		resBody, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
-		return fmt.Errorf("slack returned status %d: %s", res.StatusCode, strings.TrimSpace(string(resBody)))
-	}
-	_, _ = io.Copy(io.Discard, res.Body)
-
-	return nil
+	return a.webhook.Post(ctx, webhookURL, "application/x-www-form-urlencoded", []byte(body.Encode()))
 }

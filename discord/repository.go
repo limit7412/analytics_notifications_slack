@@ -1,18 +1,15 @@
 package discord
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/limit7412/analytics_notifications_slack/notify"
+	"github.com/limit7412/analytics_notifications_slack/webhook"
 )
 
 // Discord webhook の制約値。
@@ -33,13 +30,13 @@ const (
 )
 
 type repositoryImpl struct {
-	client *http.Client
+	webhook *webhook.Client
 }
 
 // NewRepository は Discord へ投稿するリポジトリを生成する
 func NewRepository() notify.Poster {
 	return &repositoryImpl{
-		client: &http.Client{Timeout: 10 * time.Second},
+		webhook: webhook.New("discord"),
 	}
 }
 
@@ -153,25 +150,7 @@ func (a *repositoryImpl) post(ctx context.Context, webhookURL string, payload *d
 		return fmt.Errorf("marshal discord payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewReader(params))
-	if err != nil {
-		return fmt.Errorf("create discord request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := a.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("post to discord: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		resBody, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
-		return fmt.Errorf("discord returned status %d: %s", res.StatusCode, strings.TrimSpace(string(resBody)))
-	}
-	_, _ = io.Copy(io.Discard, res.Body)
-
-	return nil
+	return a.webhook.Post(ctx, webhookURL, "application/json", params)
 }
 
 // hexToColor は `#4286f4` 形式の hex 文字列を Discord の整数指定へ変換する。

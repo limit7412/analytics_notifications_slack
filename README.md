@@ -45,10 +45,12 @@ notify/         通知先に依存しない Message と、その送信インタ�
 alert/          処理失敗を通知するユースケース
 slack/          Poster の Slack 実装
 discord/        Poster の Discord 実装
+webhook/        webhook URL へ POST する共通クライアント
 ```
 
 依存は次の向きに限り、循環しない。
 
 - `notify` → `analytics`
 - `alert`、`slack`、`discord` → `notify`
-- `analytics` は他のパッケージに依存しない
+- `slack`、`discord` → `webhook`
+- `analytics`、`webhook` は他のパッケージに依存しない
