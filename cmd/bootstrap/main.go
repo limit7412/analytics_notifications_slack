@@ -30,9 +30,9 @@ type Response struct {
 // 応じた通知先(Poster)を生成する。
 func newPoster() notify.Poster {
 	if os.Getenv("NOTIFY_MODE") == "discord" {
-		return discord.NewRepository()
+		return discord.NewPoster()
 	}
-	return slack.NewRepository()
+	return slack.NewPoster()
 }
 
 // Handler は `lambda.Start` から呼び出される Lambda ハンドラー。

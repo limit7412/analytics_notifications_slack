@@ -32,13 +32,13 @@ const (
 	discordMaxTotalLen = 6000
 )
 
-type repositoryImpl struct {
+type posterImpl struct {
 	client *http.Client
 }
 
-// NewRepository は Discord へ投稿するリポジトリを生成する
-func NewRepository() notify.Poster {
-	return &repositoryImpl{
+// NewPoster は Discord へ投稿する Poster を生成する
+func NewPoster() notify.Poster {
+	return &posterImpl{
 		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
@@ -59,7 +59,7 @@ type discordPayload struct {
 	Embeds  []*discordEmbed `json:"embeds,omitempty"`
 }
 
-func (a *repositoryImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
+func (a *posterImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
 	// メンションは embed 内では機能しないため content に出力する。
 	// pretext 相当のテキストも embed には対応する場所がないので content にまとめる。
 	contentParts := []string{}
@@ -147,7 +147,7 @@ func embedRuneCount(e *discordEmbed) int {
 	return count
 }
 
-func (a *repositoryImpl) post(ctx context.Context, webhookURL string, payload *discordPayload) error {
+func (a *posterImpl) post(ctx context.Context, webhookURL string, payload *discordPayload) error {
 	params, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal discord payload: %w", err)

@@ -37,7 +37,7 @@ func TestDiscordPost(t *testing.T) {
 	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
 	defer server.Close()
 
-	repo := NewRepository()
+	repo := NewPoster()
 	msgs := []*notify.Message{
 		{Fallback: "ok", Pretext: "ok"},
 		{Title: "ランキング", Text: "[1] [a](https://h/a): 3pv", Color: "#4286f4"},
@@ -86,7 +86,7 @@ func TestDiscordPostChunksEmbeds(t *testing.T) {
 		msgs = append(msgs, &notify.Message{Title: "t"})
 	}
 
-	repo := NewRepository()
+	repo := NewPoster()
 	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestDiscordPostTruncates(t *testing.T) {
 		{Title: strings.Repeat("う", discordMaxTitleLen+1)},
 	}
 
-	repo := NewRepository()
+	repo := NewPoster()
 	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestDiscordPostFitsSingleEmbedInTotalLimit(t *testing.T) {
 		Footer: strings.Repeat("う", discordMaxFooterLen),
 	}}
 
-	repo := NewRepository()
+	repo := NewPoster()
 	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -166,7 +166,7 @@ func TestDiscordPostChunksByTotalLength(t *testing.T) {
 		msgs = append(msgs, &notify.Message{Title: "t", Text: strings.Repeat("あ", 2900)})
 	}
 
-	repo := NewRepository()
+	repo := NewPoster()
 	if err := repo.Post(context.Background(), server.URL, msgs); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestDiscordPostEmptyMessages(t *testing.T) {
 	server := newDiscordTestServer(t, http.StatusNoContent, &payloads)
 	defer server.Close()
 
-	repo := NewRepository()
+	repo := NewPoster()
 	if err := repo.Post(context.Background(), server.URL, []*notify.Message{{}}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestDiscordPostErrorStatus(t *testing.T) {
 	server := newDiscordTestServer(t, http.StatusTooManyRequests, &payloads)
 	defer server.Close()
 
-	repo := NewRepository()
+	repo := NewPoster()
 	err := repo.Post(context.Background(), server.URL, []*notify.Message{{Title: "t"}})
 	if err == nil || !strings.Contains(err.Error(), "429") {
 		t.Fatalf("error = %v, want status 429 error", err)
