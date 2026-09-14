@@ -11,7 +11,8 @@ googleアナリティクスのpvを集計してランキングを作成して投
     - `npm ci`
   - 以下の2つのファイルを用意
     - ./secret.json
-      - googleアナリティクスapiへのアクセス用
+      - googleアナリティクスapiへのアクセス用のサービスアカウント鍵
+      - パスはコード側で `./secret.json` に固定しており、環境変数では変更できない
     - ./env.yml
       - 環境変数を定義しserverless.ymlに渡すためのyml
   - `sls deploy --stage <環境名>`
@@ -19,7 +20,6 @@ googleアナリティクスのpvを集計してランキングを作成して投
 
 ### env.yml
 ```
-  GOOGLE_APPLICATION_CREDENTIALS: secret.json
   PROPERTY_ID: <対象にしたいGA4のプロパティID。カンマ区切りで複数指定可>
   NOTIFY_MODE: <投稿先。slack または discord。未設定時は slack>
   SUCCESS_WEBHOOK_URL: <集計結果を投稿するwebhook>
