@@ -14,13 +14,13 @@ import (
 	"github.com/limit7412/analytics_notifications_slack/notify"
 )
 
-type posterImpl struct {
+type repositoryImpl struct {
 	client *http.Client
 }
 
-// NewPoster は Slack へ投稿する Poster を生成する
-func NewPoster() notify.Poster {
-	return &posterImpl{
+// NewRepository は Slack へ投稿するリポジトリを生成する
+func NewRepository() notify.Poster {
+	return &repositoryImpl{
 		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
@@ -46,7 +46,7 @@ func toMrkdwnLinks(text string) string {
 	return markdownLink.ReplaceAllString(text, "<$2|$1>")
 }
 
-func (a *posterImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
+func (a *repositoryImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
 	attachments := make([]*attachment, 0, len(msgs))
 	for _, msg := range msgs {
 		if msg == nil {

@@ -28,7 +28,7 @@ func TestSlackPost(t *testing.T) {
 	}))
 	defer server.Close()
 
-	repo := NewPoster()
+	repo := NewRepository()
 	msgs := []*notify.Message{
 		{Fallback: "ok", Pretext: "ok"},
 		{Title: "ランキング", Text: "[1] [a](https://h/a): 3pv\n[2] [b](https://h/b): 1pv", Color: "#4286f4"},
@@ -72,7 +72,7 @@ func TestSlackPostErrorStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	repo := NewPoster()
+	repo := NewRepository()
 	err := repo.Post(context.Background(), server.URL, []*notify.Message{{Title: "t"}})
 	if err == nil || !strings.Contains(err.Error(), "400") {
 		t.Fatalf("error = %v, want status 400 error", err)
