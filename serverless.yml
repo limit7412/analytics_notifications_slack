@@ -27,7 +27,7 @@ custom:
   scripts:
     hooks:
       # ローカルでのビルド時に bootstrap を生成する
-      'before:package:createDeploymentArtifacts': GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap handler/main.go
+      'before:package:createDeploymentArtifacts': GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap ./cmd/bootstrap
 
 package:
   patterns:

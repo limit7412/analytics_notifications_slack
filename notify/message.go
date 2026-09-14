@@ -1,12 +1,4 @@
-package repository
-
-import "context"
-
-// NotifyRepository は通知メッセージを webhook へ投稿するリポジトリの
-// 共通インターフェース。Slack / Discord をアダプタとして差し替えられる。
-type NotifyRepository interface {
-	Post(ctx context.Context, webhookURL string, msgs []*Message) error
-}
+package notify
 
 // Message は投稿先サービスに依存しない中立な通知メッセージ。
 // リンクは markdown 形式 `[title](url)` で Text に保持し、

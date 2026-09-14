@@ -1,4 +1,4 @@
-package repository
+package discord
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/limit7412/analytics_notifications_slack/notify"
 )
 
 // Discord webhook の制約値。
@@ -30,13 +32,13 @@ const (
 	discordMaxTotalLen = 6000
 )
 
-type discordImpl struct {
+type repositoryImpl struct {
 	client *http.Client
 }
 
-// NewDiscordRepository は Discord へ投稿するリポジトリを生成する
-func NewDiscordRepository() NotifyRepository {
-	return &discordImpl{
+// NewRepository は Discord へ投稿するリポジトリを生成する
+func NewRepository() notify.Poster {
+	return &repositoryImpl{
 		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
@@ -57,7 +59,7 @@ type discordPayload struct {
 	Embeds  []*discordEmbed `json:"embeds,omitempty"`
 }
 
-func (a *discordImpl) Post(ctx context.Context, webhookURL string, msgs []*Message) error {
+func (a *repositoryImpl) Post(ctx context.Context, webhookURL string, msgs []*notify.Message) error {
 	// メンションは embed 内では機能しないため content に出力する。
 	// pretext 相当のテキストも embed には対応する場所がないので content にまとめる。
 	contentParts := []string{}
@@ -145,7 +147,7 @@ func embedRuneCount(e *discordEmbed) int {
 	return count
 }
 
-func (a *discordImpl) post(ctx context.Context, webhookURL string, payload *discordPayload) error {
+func (a *repositoryImpl) post(ctx context.Context, webhookURL string, payload *discordPayload) error {
 	params, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal discord payload: %w", err)
