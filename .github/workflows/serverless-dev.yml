@@ -17,13 +17,13 @@ jobs:
     steps:
 
     - name: checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v5.1.0
 
     - name: setup node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v4.4.0
 
     - name: setup go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v5.6.0
       with:
         go-version-file: go.mod
 
@@ -34,7 +34,7 @@ jobs:
       run: npm ci
 
     - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v4.3.1
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ap-northeast-1
