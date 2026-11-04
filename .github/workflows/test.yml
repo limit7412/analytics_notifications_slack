@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.1.0
 
       - name: setup go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.6.0
         with:
           go-version-file: go.mod
 
