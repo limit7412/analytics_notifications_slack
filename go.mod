@@ -4,7 +4,7 @@ go 1.27.4
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.25.0
 	google.golang.org/api v0.284.0
 )
 
