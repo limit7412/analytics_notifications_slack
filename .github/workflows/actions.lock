@@ -7,12 +7,12 @@ workflows:
     '.github/workflows/serverless-dev.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v5.6.0'
-        - 'actions/setup-node@v4.4.0'
+        - 'actions/setup-node@v7.1.0'
         - 'aws-actions/configure-aws-credentials@v4.3.1'
     '.github/workflows/serverless-prod.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v5.6.0'
-        - 'actions/setup-node@v4.4.0'
+        - 'actions/setup-node@v7.1.0'
         - 'aws-actions/configure-aws-credentials@v4.3.1'
     '.github/workflows/test.yml':
         - 'actions/checkout@v7.0.1'
@@ -30,9 +30,9 @@ dependencies:
         commit: 'sha1-40f1582b2485089dde7abd97c1529aa768e1baff'
         owner_id: 44036562
         repo_id: 192624594
-    'actions/setup-node@v4.4.0':
-        ref: 'v4.4.0'
-        commit: 'sha1-49933ea5288caeca8642d1e84afbd3f7d6820020'
+    'actions/setup-node@v7.1.0':
+        ref: 'v7.1.0'
+        commit: 'sha1-949feb2413d6458794dcd2491c4babbbce0c15c1'
         owner_id: 44036562
         repo_id: 189476904
     'aws-actions/configure-aws-credentials@v4.3.1':
