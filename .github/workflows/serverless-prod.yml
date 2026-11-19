@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v7.1.0
 
       - name: setup go
-        uses: actions/setup-go@v5.6.0
+        uses: actions/setup-go@v7.1.0
         with:
           go-version-file: go.mod
 
