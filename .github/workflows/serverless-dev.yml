@@ -34,7 +34,7 @@ jobs:
       run: npm ci
 
     - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v6.3.0
+      uses: aws-actions/configure-aws-credentials@v6.3.1
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: ap-northeast-1
